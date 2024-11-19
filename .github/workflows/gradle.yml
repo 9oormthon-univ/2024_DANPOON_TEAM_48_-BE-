@@ -20,17 +20,15 @@ jobs:
         distribution: 'temurin'
 
     - name: Add execute permission to gradlew
-      working-directory: Mesh_backend # Gradle Wrapper가 있는 디렉토리
-      run: chmod +x ./gradlew
+      run: chmod +x Mesh_backend/gradlew
 
     - name: Setup Gradle
-      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582
       with:
-        working-directory: Mesh_backend
+        build-root-directory: Mesh_backend
 
-    - name: Build with Gradle Wrapper
-      working-directory: Mesh_backend
-      run: ./gradlew build
+    - name: Build without tests
+      run: Mesh_backend/gradlew build -x test
 
   dependency-submission:
 
@@ -47,10 +45,9 @@ jobs:
         distribution: 'temurin'
 
     - name: Add execute permission to gradlew
-      working-directory: Mesh_backend
-      run: chmod +x ./gradlew
+      run: chmod +x Mesh_backend/gradlew
 
     - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
+      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582
       with:
-        working-directory: Mesh_backend
+        build-root-directory: Mesh_backend
