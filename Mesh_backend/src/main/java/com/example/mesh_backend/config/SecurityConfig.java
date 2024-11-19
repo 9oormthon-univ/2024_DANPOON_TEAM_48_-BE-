@@ -1,5 +1,7 @@
 package com.example.mesh_backend.config;
 
+import com.example.mesh_backend.login.security.CustomUserDetailsService;
+import com.example.mesh_backend.login.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import lombok.RequiredArgsConstructor;
@@ -23,42 +25,53 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-            http
-                    .csrf(csrfConfig -> csrfConfig.disable())
-                    .headers(headerConfig -> headerConfig.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable()))
-                    .authorizeHttpRequests(authorizeRequests -> authorizeRequests
-                            .requestMatchers(URL_TO_PERMIT).permitAll()
-                            .anyRequest().authenticated()
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrfConfig -> csrfConfig.disable())
+                .headers(headerConfig -> headerConfig.frameOptions(frameOptionsConfig -> frameOptionsConfig.disable()))
+                .authorizeHttpRequests(authorizeRequests -> authorizeRequests
+                        .requestMatchers(URL_TO_PERMIT).permitAll()
+                        .anyRequest().authenticated()
 
-                    )
+                )
 
-                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                    .cors(withDefaults())
-                    .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .cors(withDefaults())
+                .sessionManagement(session   -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new JwtAuthenticationFilter(customUserDetailsService), UsernamePasswordAuthenticationFilter.class);
 
-            return http.build();
-        }
+        return http.build();
+    }
 
-        private static final String[] URL_TO_PERMIT = {
-                "/swagger-ui/**",
-                "/api/v1/**",
-                "/v3/api-docs/**"
-        };
+    private static final String[] URL_TO_PERMIT = {
+            "/swagger-ui/**",
+            "/api/v1/**",
+            "/v3/api-docs/**"
+    };
 
-        @Bean
-        public CorsConfigurationSource corsConfigurationSource() {
-            CorsConfiguration configuration = new CorsConfiguration();
-            configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
-            configuration.addExposedHeader("Authorization");
-            configuration.addAllowedOrigin("http://localhost:3000");
-            configuration.addAllowedMethod("*");
-            configuration.addAllowedHeader("*");
-            configuration.setAllowCredentials(true);
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedHeaders(List.of("Content-Type", "Authorization"));
+        configuration.addExposedHeader("Authorization");
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedMethod("*");
+        configuration.addAllowedHeader("*");
+        configuration.setAllowCredentials(true);
 
-            UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-            source.registerCorsConfiguration("/**", configuration);
-            return source;
-        }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
+
+    private final CustomUserDetailsService customUserDetailsService;
+
+    @Bean
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(customUserDetailsService);
+        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        return provider;
+    }
 }

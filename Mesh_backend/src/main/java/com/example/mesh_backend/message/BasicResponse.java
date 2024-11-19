@@ -1,4 +1,5 @@
 package com.example.mesh_backend.message;
+import com.example.mesh_backend.common.exception.ErrorCode;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,8 +37,9 @@ public class BasicResponse<T> {
         return new BasicResponse<>(SUCCESS, HttpStatus.CREATED.value(), data);
     }
 
-    public static <T> BasicResponse<T> ofError(String message, int statusCode) {
-        return new BasicResponse<>(message, statusCode, null);
+
+    public static <T> BasicResponse<T> ofError(ErrorCode errorCode) {
+        return new BasicResponse<>(errorCode.getMessage(), errorCode.getStatus(), null);
     }
 
 }
