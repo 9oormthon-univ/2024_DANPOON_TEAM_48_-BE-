@@ -21,8 +21,15 @@ public enum ErrorCode {
     LOGIN_REQUIRED(401, "AUTH002", "로그인이 필요합니다."),
     INTERNAL_SERVER_ERROR(500, "COMMON002", "서버 오류가 발생했습니다."),
     USER_ID_REQUIRED(400, "USER004", "유저 ID가 필요합니다."),
-    KAKAO_API_ERROR(500, "KAKAO001", "카카오 API 호출 중 오류가 발생했습니다.");
+    KAKAO_API_ERROR(500, "KAKAO001", "카카오 API 호출 중 오류가 발생했습니다."),
 
+    //mypage
+    UNAUTHORIZED_USER(401, "AUTH003", "인증된 유저 정보가 없습니다."),
+    ACCESS_DENIED(403, "AUTH004", "접근 권한이 없습니다."),
+    SESSION_EXPIRED(401, "AUTH005", "세션이 만료되었습니다."),
+    INVALID_CATEGORY_NAME(400, "DATA001", "유효하지 않은 카테고리 이름입니다."),
+    EMPTY_REQUIRED_FIELD(400, "DATA002", "필수 입력 값이 비어 있습니다."),
+    INVALID_FORMAT(400, "DATA003", "입력 데이터 형식이 유효하지 않습니다.");
 
 
     private int status;
