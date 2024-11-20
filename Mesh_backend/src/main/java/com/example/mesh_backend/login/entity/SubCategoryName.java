@@ -31,7 +31,10 @@ public enum SubCategoryName {
     Backbone(MainCategoryName.프론트엔드),
     Semantic_UI(MainCategoryName.프론트엔드),
     Foundation(MainCategoryName.프론트엔드),
-    Preact(MainCategoryName.프론트엔드);
+    Preact(MainCategoryName.프론트엔드),
+    Notion(MainCategoryName.협업),
+    Slack(MainCategoryName.협업),
+    Discord(MainCategoryName.협업);
 
     private final MainCategoryName mainCategory;
 
