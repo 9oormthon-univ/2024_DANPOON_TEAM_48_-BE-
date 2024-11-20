@@ -8,7 +8,6 @@ import com.example.mesh_backend.mypage.entity.Career;
 import com.example.mesh_backend.mypage.entity.CollaborationTool;
 import com.example.mesh_backend.mypage.entity.Tool;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -135,6 +134,4 @@ public class MypageService {
 
         userRepository.save(user);
     }
-
-
 }
