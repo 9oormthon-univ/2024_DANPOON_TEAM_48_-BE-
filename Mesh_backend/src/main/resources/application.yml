@@ -37,6 +37,20 @@ spring :
 kakao:
   admin-key: ${KAKAO_ADMIN_KEY}
 
+cloud:
+  aws:
+    s3:
+      bucket: meshproject-s3-bucket
+    credentials:
+      access-key: ${S3ACCESSKEY}
+      secret-key: ${S3SECRETKEY}
+    region:
+      static: ap-northeast-2
+      auto: false
+    stack:
+      auto: false
+
+
 jwt:
   secret-key: ${JWT_SECRET_KEY}
 
