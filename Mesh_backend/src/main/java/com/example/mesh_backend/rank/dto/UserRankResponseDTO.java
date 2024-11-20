@@ -10,4 +10,5 @@ public class UserRankResponseDTO {
     private String nickname;
     private Long meshScore;
     private String profileImageUrl;
+    private Integer rank;
 }
