@@ -1,5 +1,6 @@
 package com.example.mesh_backend.rank.controller;
 
+import com.example.mesh_backend.rank.dto.UserProfileResponseDTO;
 import com.example.mesh_backend.rank.dto.UserRankResponseDTO;
 import com.example.mesh_backend.rank.service.RankService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,27 +19,28 @@ public class RankController {
 
     private final RankService rankService;
 
+    // 상위 100명 랭킹 조회
     @GetMapping
     @Operation(summary = "랭킹 리스트 조회", description = "Mesh Score 기준으로 상위 100명의 랭킹을 반환합니다.")
-    public ResponseEntity<List<UserRankResponseDTO>> getRankList() {
+    public ResponseEntity<List<UserRankResponseDTO>> getTopRankList() {
         List<UserRankResponseDTO> rankList = rankService.getTop100UsersByMeshScore();
         return ResponseEntity.ok(rankList);
     }
 
+    // 나의 랭킹 조회
     @GetMapping("/me")
-    @Operation(summary = "나의 랭킹 조회", description = "현재 사용자의 랭킹을 조회합니다.")
+    @Operation(summary = "나의 랭킹 조회", description = "현재 사용자의 Mesh Score 순위를 반환합니다.")
     public ResponseEntity<UserRankResponseDTO> getMyRank(@RequestHeader("Authorization") String token) {
-        // Token에서 userId 추출 (TokenService 활용)
-        Long userId = extractUserIdFromToken(token);
+        Long userId = extractUserIdFromToken(token); // 토큰에서 userId 추출
         UserRankResponseDTO userRank = rankService.getUserRank(userId);
         return ResponseEntity.ok(userRank);
     }
 
     @GetMapping("/{user_id}")
-    @Operation(summary = "특정 사용자 랭킹 조회", description = "특정 사용자의 랭킹을 조회합니다.")
-    public ResponseEntity<UserRankResponseDTO> getUserRank(@PathVariable("user_id") Long userId) {
-        UserRankResponseDTO userRank = rankService.getUserRank(userId);
-        return ResponseEntity.ok(userRank);
+    @Operation(summary = "특정 사용자 프로필 조회", description = "특정 사용자의 프로필을 조회합니다.")
+    public ResponseEntity<UserProfileResponseDTO> getUserProfile(@PathVariable("user_id") Long userId) {
+        UserProfileResponseDTO userProfile = rankService.getUserProfile(userId);
+        return ResponseEntity.ok(userProfile);
     }
 
     // 토큰에서 userId 추출 메서드 (TokenService 활용)

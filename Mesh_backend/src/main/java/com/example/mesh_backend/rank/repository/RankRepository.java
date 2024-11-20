@@ -13,4 +13,5 @@ public interface RankRepository extends JpaRepository<User, Long> {
     // mesh_score를 기준으로 정렬하여 상위 100명 조회
     @Query("SELECT u FROM User u ORDER BY u.meshScore DESC")
     List<User> findTop100ByOrderByMeshScoreDesc();
+    int countByMeshScoreGreaterThan(Long meshScore);
 }
