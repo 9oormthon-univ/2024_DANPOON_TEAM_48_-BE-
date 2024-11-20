@@ -1,10 +1,16 @@
 package com.example.mesh_backend.login.entity;
 
+import com.example.mesh_backend.mypage.entity.Award;
+import com.example.mesh_backend.mypage.entity.Career;
+import com.example.mesh_backend.mypage.entity.Tool;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.util.List;
 
 @Entity
 @Getter
@@ -33,6 +39,7 @@ public class User {
     @Column(name = "profile_image_url")
     private String profileImageUrl;
 
+    @Size(max = 100, message = "Content는 최대 100자까지 입력할 수 있습니다.")
     @Column(columnDefinition = "TEXT")
     private String content;
 
@@ -41,4 +48,19 @@ public class User {
 
     @Column
     private String portfolio;
+
+
+    @OneToMany(mappedBy = "user",  fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Maincategory> maincategories;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Tool> tools;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Award> awards;
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Career> careers;
+
+
 }
