@@ -1,6 +1,7 @@
 package com.example.mesh_backend.post.service;
 
 import com.example.mesh_backend.post.dto.PostRequestDTO;
+import com.example.mesh_backend.post.dto.PostResponseDTO;
 import com.example.mesh_backend.post.entity.Post;
 import com.example.mesh_backend.post.repository.PostRepository;
 import com.example.mesh_backend.post.service.PostService;
@@ -9,6 +10,8 @@ import com.example.mesh_backend.login.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl implements PostService {
@@ -45,5 +48,12 @@ public class PostServiceImpl implements PostService {
 
         postRepository.save(post);
         return "공고가 성공적으로 저장되었습니다.";
+    }
+    @Override
+    public List<PostResponseDTO> getTop5Projects() {
+        List<Post> top5Posts = postRepository.findTop5ByOrderByViewsDesc(); // 조회수 기준 상위 5개
+        return top5Posts.stream()
+                .map(post -> new PostResponseDTO(post.getProjectTitle()))
+                .collect(Collectors.toList());
     }
 }
