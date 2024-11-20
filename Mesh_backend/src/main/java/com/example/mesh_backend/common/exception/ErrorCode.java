@@ -22,6 +22,10 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(500, "COMMON002", "서버 오류가 발생했습니다."),
     USER_ID_REQUIRED(400, "USER004", "유저 ID가 필요합니다."),
     KAKAO_API_ERROR(500, "KAKAO001", "카카오 API 호출 중 오류가 발생했습니다."),
+    JSON_PARSING_ERROR(400, "COMMON001", "JSON 파싱 오류 발생"),
+    UNKNOWN_ERROR(500, "COMMON003", "처리 중 오류 발생"),
+
+
 
     //mypage
     UNAUTHORIZED_USER(401, "AUTH003", "인증된 유저 정보가 없습니다."),
@@ -29,7 +33,12 @@ public enum ErrorCode {
     SESSION_EXPIRED(401, "AUTH005", "세션이 만료되었습니다."),
     INVALID_CATEGORY_NAME(400, "DATA001", "유효하지 않은 카테고리 이름입니다."),
     EMPTY_REQUIRED_FIELD(400, "DATA002", "필수 입력 값이 비어 있습니다."),
-    INVALID_FORMAT(400, "DATA003", "입력 데이터 형식이 유효하지 않습니다.");
+    INVALID_FORMAT(400, "DATA003", "입력 데이터 형식이 유효하지 않습니다."),
+
+    // AWS-S3
+    FILE_CONVERT_FAIL(500, "S3_001", "파일 변환 실패"),
+    FILE_PROCESSING_ERROR(500, "COMMON002", "파일 처리 오류 발생"),
+    FILE_UPLOAD_FAIL(500, "S3_002", "파일 업로드 실패");
 
 
     private int status;

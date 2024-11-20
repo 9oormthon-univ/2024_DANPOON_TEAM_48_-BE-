@@ -1,6 +1,7 @@
 package com.example.mesh_backend.login.controller;
 
 import com.example.mesh_backend.common.exception.ErrorCode;
+import com.example.mesh_backend.common.utils.S3Uploader;
 import com.example.mesh_backend.login.dto.request.KakaoSignupRequest;
 import com.example.mesh_backend.login.dto.request.KakaoTokenRequest;
 import com.example.mesh_backend.login.dto.response.UserIdResponse;
@@ -23,6 +24,12 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Optional;
 
 
@@ -35,6 +42,7 @@ public class UserController {
     private final UserService userService;
     private final TokenService tokenService;
     private final UserRepository userRepository;
+    private final S3Uploader s3Uploader;
 
 
     @Value("${kakao.admin-key}")
@@ -58,7 +66,14 @@ public class UserController {
             User user = new User();
             user.setEmail(kakaoUser.getEmail());
             user.setKakaoId(kakaoUser.getKakaoId());
-            user.setProfileImageUrl(kakaoUser.getProfileImageUrl());
+
+            //카카오 프로필 이미지 s3에 업로드
+            if (kakaoUser.getProfileImageUrl() != null) {
+                File imageFile = downloadImageFromUrl(kakaoUser.getProfileImageUrl());
+                String s3ImageUrl = s3Uploader.upload(imageFile, "profile-images");
+                user.setProfileImageUrl(s3ImageUrl);
+                imageFile.delete();
+            }
 
             user = userService.signup(user);
 
@@ -69,6 +84,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
+
+
 
     @PostMapping("/signup/kakao/step1")
     @Operation(summary = "회원가입_1", description = "추가적인 프로필 이미지, 닉네임, 전공을 작성하는 API")
@@ -99,6 +116,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
+
 
     //2. 로그인
     @GetMapping("/login/kakao")
@@ -139,6 +157,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
+
 
     //3. 로그아웃
     @Operation(summary = "로그아웃", description = "로그아웃 API")
@@ -203,4 +222,18 @@ public class UserController {
         BasicResponse<String> response = BasicResponse.ofSuccess("새로운 AccessToken: " + newAccessToken);
         return ResponseEntity.ok(response);
     }
+
+    private File downloadImageFromUrl(String imageUrl) throws IOException {
+        URL url = new URL(imageUrl);
+        File file = File.createTempFile("temp", ".jpg");
+        try (InputStream in = url.openStream(); FileOutputStream out = new FileOutputStream(file)) {
+            byte[] buffer = new byte[1024];
+            int bytesRead;
+            while ((bytesRead = in.read(buffer)) != -1) {
+                out.write(buffer, 0, bytesRead);
+            }
+        }
+        return file;
+    }
+
 }
