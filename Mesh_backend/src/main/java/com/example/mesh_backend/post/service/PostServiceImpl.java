@@ -137,12 +137,22 @@ public class PostServiceImpl implements PostService {
             }
         }
 
-        // 3. 파일 및 이미지 수정
+        // 3. 파일 처리 (null 체크)
         if (requestDTO.getProjectFile() != null) {
-            post.setProjectFile(requestDTO.getProjectFile());
+            post.setProjectFile(requestDTO.getProjectFile()); // 새 파일이 있으면 업데이트
         }
+
         if (requestDTO.getProjectImage() != null) {
-            post.setProjectImageUrl(requestDTO.getProjectImage());
+            post.setProjectImageUrl(requestDTO.getProjectImage()); // 새 이미지가 있으면 업데이트
+        }
+
+        // 파일이 null이면 기존 값을 유지
+        if (requestDTO.getProjectFile() == null && post.getProjectFile() != null) {
+            post.setProjectFile(post.getProjectFile()); // 기존 파일 값 유지
+        }
+
+        if (requestDTO.getProjectImage() == null && post.getProjectImageUrl() != null) {
+            post.setProjectImageUrl(post.getProjectImageUrl()); // 기존 이미지 값 유지
         }
 
         postRepository.save(post);
