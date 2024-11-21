@@ -4,6 +4,7 @@ import com.example.mesh_backend.common.CustomException;
 import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.post.dto.PostRequestDTO;
+import com.example.mesh_backend.post.dto.ProjectUpdateRequestDTO;
 import com.example.mesh_backend.post.service.PostService;
 import com.example.mesh_backend.login.service.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -55,5 +56,14 @@ public class PostController {
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAIL);
         }
+    }
+
+    @PatchMapping("/{project_id}")
+    public ResponseEntity<String> updateProject(
+            @PathVariable("project_id") Long projectId,
+            @RequestBody ProjectUpdateRequestDTO requestDTO
+    ) {
+        String message = postService.updateProject(projectId, requestDTO);
+        return ResponseEntity.ok(message);
     }
 }
