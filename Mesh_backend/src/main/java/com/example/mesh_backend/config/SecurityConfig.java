@@ -47,7 +47,8 @@ public class SecurityConfig {
     private static final String[] URL_TO_PERMIT = {
             "/swagger-ui/**",
             "/api/v1/**",
-            "/v3/api-docs/**"
+            "/v3/api-docs/**",
+            "/chat.html"
     };
 
     @Bean
