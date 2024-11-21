@@ -5,6 +5,7 @@ import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.post.dto.PostRequestDTO;
 import com.example.mesh_backend.post.dto.ProjectUpdateRequestDTO;
+import com.example.mesh_backend.post.dto.TeamMembersDTO;
 import com.example.mesh_backend.post.service.PostService;
 import com.example.mesh_backend.login.service.TokenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,8 +62,17 @@ public class PostController {
     @PatchMapping("/{project_id}")
     public ResponseEntity<String> updateProject(
             @PathVariable("project_id") Long projectId,
-            @RequestBody ProjectUpdateRequestDTO requestDTO
+            @RequestPart(value = "projectFile", required = false) MultipartFile projectFile,
+            @RequestPart(value = "projectImage", required = false) MultipartFile projectImage,
+            @RequestPart("postRequest") PostRequestDTO postRequestDTO,
+            @RequestPart("teamMembers") TeamMembersDTO teamMembers
     ) {
+        ProjectUpdateRequestDTO requestDTO = new ProjectUpdateRequestDTO();
+        requestDTO.setPostRequest(postRequestDTO);
+        requestDTO.setProjectFile(projectFile != null ? projectFile.getOriginalFilename() : null);
+        requestDTO.setProjectImage(projectImage != null ? projectImage.getOriginalFilename() : null);
+        requestDTO.setTeamMembers(teamMembers);
+
         String message = postService.updateProject(projectId, requestDTO);
         return ResponseEntity.ok(message);
     }

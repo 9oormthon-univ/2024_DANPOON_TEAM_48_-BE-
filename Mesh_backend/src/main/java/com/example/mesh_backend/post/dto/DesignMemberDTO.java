@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class DesignMemberDTO {
-    private Long designId;
+    private String nickname;
 }

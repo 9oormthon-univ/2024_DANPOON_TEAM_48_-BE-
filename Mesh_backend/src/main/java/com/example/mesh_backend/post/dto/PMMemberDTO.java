@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class PMMemberDTO {
-    private Long pmId;
+    private String nickname;
 }

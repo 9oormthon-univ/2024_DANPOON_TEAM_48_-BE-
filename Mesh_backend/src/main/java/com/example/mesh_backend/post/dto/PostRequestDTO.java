@@ -20,6 +20,4 @@ public class PostRequestDTO {
     private String backCategory;
     private String frontCategory;
     private Status status;
-    private String projectFile;
-    private String projectImage;
 }

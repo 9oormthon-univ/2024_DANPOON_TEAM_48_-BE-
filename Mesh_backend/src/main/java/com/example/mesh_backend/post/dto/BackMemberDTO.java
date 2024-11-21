@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class BackMemberDTO {
-    private Long backId;
+    private String nickname;
 }
