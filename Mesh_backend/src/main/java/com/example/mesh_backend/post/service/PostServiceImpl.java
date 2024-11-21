@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -29,6 +30,7 @@ public class PostServiceImpl implements PostService {
     private final FrontMatchRepository frontMatchRepository;
     private final DesignMatchRepository designMatchRepository;
     private final UserRepository userRepository;
+    private final ProjectRepository projectRepository;
     private final S3Uploader s3Uploader;
 
     public PostServiceImpl(PostRepository postRepository,
@@ -37,6 +39,7 @@ public class PostServiceImpl implements PostService {
                            FrontMatchRepository frontMatchRepository,
                            DesignMatchRepository designMatchRepository,
                            UserRepository userRepository,
+                           ProjectRepository projectRepository,
                            S3Uploader s3Uploader) {
         this.postRepository = postRepository;
         this.pmMatchRepository = pmMatchRepository;
@@ -44,6 +47,7 @@ public class PostServiceImpl implements PostService {
         this.frontMatchRepository = frontMatchRepository;
         this.userRepository = userRepository;
         this.designMatchRepository = designMatchRepository;
+        this.projectRepository = projectRepository;
         this.s3Uploader = s3Uploader;
     }
 
@@ -99,63 +103,11 @@ public class PostServiceImpl implements PostService {
         // 2. 공고 정보 수정
         if (requestDTO.getPostRequest() != null) {
             PostRequestDTO postRequest = requestDTO.getPostRequest();
-            if (postRequest.getProjectTitle() != null) {
-                post.setPostTitle(postRequest.getProjectTitle());
-            }
-            if (postRequest.getProjectContents() != null) {
-                post.setPostContents(postRequest.getProjectContents());
-            }
-            if (postRequest.getDeadline() != null) {
-                post.setDeadline(postRequest.getDeadline());
-            }
-            if (postRequest.getPmBest() != null) {
-                post.setPmBest(postRequest.getPmBest());
-            }
-            if (postRequest.getDesignBest() != null) {
-                post.setDesignBest(postRequest.getDesignBest());
-            }
-            if (postRequest.getBackBest() != null) {
-                post.setBackBest(postRequest.getBackBest());
-            }
-            if (postRequest.getFrontBest() != null) {
-                post.setFrontBest(postRequest.getFrontBest());
-            }
-            if (postRequest.getPmCategory() != null) {
-                post.setPmCategory(postRequest.getPmCategory());
-            }
-            if (postRequest.getDesignCategory() != null) {
-                post.setDesignCategory(postRequest.getDesignCategory());
-            }
-            if (postRequest.getBackCategory() != null) {
-                post.setBackCategory(postRequest.getBackCategory());
-            }
-            if (postRequest.getFrontCategory() != null) {
-                post.setFrontCategory(postRequest.getFrontCategory());
-            }
-            if (postRequest.getStatus() != null) {
-                post.setStatus(postRequest.getStatus());
-            }
+            updatePostDetails(post, postRequest);
         }
 
-        // 3. 파일 처리 (null 체크)
-        if (requestDTO.getProjectFile() != null) {
-            post.setProjectFile(requestDTO.getProjectFile()); // 새 파일이 있으면 업데이트
-        }
-
-        if (requestDTO.getProjectImage() != null) {
-            post.setProjectImageUrl(requestDTO.getProjectImage()); // 새 이미지가 있으면 업데이트
-        }
-
-        // 파일이 null이면 기존 값을 유지
-        if (requestDTO.getProjectFile() == null && post.getProjectFile() != null) {
-            post.setProjectFile(post.getProjectFile()); // 기존 파일 값 유지
-        }
-
-        if (requestDTO.getProjectImage() == null && post.getProjectImageUrl() != null) {
-            post.setProjectImageUrl(post.getProjectImageUrl()); // 기존 이미지 값 유지
-        }
-
-        postRepository.save(post);
+        // 3. 파일 처리
+        updatePostFiles(post, requestDTO);
 
         // 4. 기존 매칭 데이터 삭제
         pmMatchRepository.deleteAllByPost(post);
@@ -163,82 +115,86 @@ public class PostServiceImpl implements PostService {
         frontMatchRepository.deleteAllByPost(post);
         designMatchRepository.deleteAllByPost(post);
 
-        // 5. 새로운 팀원 매칭 데이터 추가
+        // 5. 기존 프로젝트 데이터 삭제
+        projectRepository.deleteAllByPost(post);
+
+        // 6. 새로운 매칭 및 프로젝트 데이터 추가
         if (requestDTO.getTeamMembers() != null) {
             TeamMembersDTO teamMembers = requestDTO.getTeamMembers();
 
-            // PM 매칭 저장
-            if (teamMembers.getPmMembers() != null) {
-                for (PMMemberDTO pm : teamMembers.getPmMembers()) {
-                    savePMMatchByNickname(pm.getNickname(), post);
-                }
-            }
+            // 팀장 추가
+            addTeamLeaderToProject(post);
 
-            // Back 매칭 저장
-            if (teamMembers.getBackMembers() != null) {
-                for (BackMemberDTO back : teamMembers.getBackMembers()) {
-                    saveBackMatchByNickname(back.getNickname(), post);
-                }
-            }
-
-            // Front 매칭 저장
-            if (teamMembers.getFrontMembers() != null) {
-                for (FrontMemberDTO front : teamMembers.getFrontMembers()) {
-                    saveFrontMatchByNickname(front.getNickname(), post);
-                }
-            }
-
-            // Design 매칭 저장
-            if (teamMembers.getDesignMembers() != null) {
-                for (DesignMemberDTO design : teamMembers.getDesignMembers()) {
-                    saveDesignMatchByNickname(design.getNickname(), post);
-                }
-            }
+            // 팀원 추가
+            addTeamMembersToProject(teamMembers, post);
         }
 
+        postRepository.save(post);
         return "프로젝트가 성공적으로 수정되었습니다.";
     }
-    // Helper 메서드: nickname으로 User ID 찾고 매칭 데이터 저장
-    private void savePMMatchByNickname(String nickname, Post post) {
-        User user = userRepository.findByNickname(nickname);
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-        PMMatch pmMatch = new PMMatch();
-        pmMatch.setPmId(user.getUserId());
-        pmMatch.setPost(post);
-        pmMatchRepository.save(pmMatch);
-    }
-    private void saveBackMatchByNickname(String nickname, Post post) {
-        User user = userRepository.findByNickname(nickname);
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-        BackMatch backMatch = new BackMatch();
-        backMatch.setBackId(user.getUserId());
-        backMatch.setPost(post);
-        backMatchRepository.save(backMatch);
+
+    private void updatePostDetails(Post post, PostRequestDTO postRequest) {
+        if (postRequest.getProjectTitle() != null) post.setPostTitle(postRequest.getProjectTitle());
+        if (postRequest.getProjectContents() != null) post.setPostContents(postRequest.getProjectContents());
+        if (postRequest.getDeadline() != null) post.setDeadline(postRequest.getDeadline());
+        if (postRequest.getPmBest() != null) post.setPmBest(postRequest.getPmBest());
+        if (postRequest.getDesignBest() != null) post.setDesignBest(postRequest.getDesignBest());
+        if (postRequest.getBackBest() != null) post.setBackBest(postRequest.getBackBest());
+        if (postRequest.getFrontBest() != null) post.setFrontBest(postRequest.getFrontBest());
+        if (postRequest.getPmCategory() != null) post.setPmCategory(postRequest.getPmCategory());
+        if (postRequest.getDesignCategory() != null) post.setDesignCategory(postRequest.getDesignCategory());
+        if (postRequest.getBackCategory() != null) post.setBackCategory(postRequest.getBackCategory());
+        if (postRequest.getFrontCategory() != null) post.setFrontCategory(postRequest.getFrontCategory());
+        if (postRequest.getStatus() != null) post.setStatus(postRequest.getStatus());
     }
 
-    private void saveFrontMatchByNickname(String nickname, Post post) {
-        User user = userRepository.findByNickname(nickname);
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-        FrontMatch frontMatch = new FrontMatch();
-        frontMatch.setFrontId(user.getUserId());
-        frontMatch.setPost(post);
-        frontMatchRepository.save(frontMatch);
-    }
-    private void saveDesignMatchByNickname(String nickname, Post post) {
-        User user = userRepository.findByNickname(nickname);
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
-        DesignMatch designMatch = new DesignMatch();
-        designMatch.setDesignId(user.getUserId());
-        designMatch.setPost(post);
-        designMatchRepository.save(designMatch);
+    private void updatePostFiles(Post post, ProjectUpdateRequestDTO requestDTO) {
+        if (requestDTO.getProjectFile() != null) post.setProjectFile(requestDTO.getProjectFile());
+        if (requestDTO.getProjectImage() != null) post.setProjectImageUrl(requestDTO.getProjectImage());
     }
 
+    private void addTeamLeaderToProject(Post post) {
+        Project teamLeaderProject = new Project();
+        teamLeaderProject.setPost(post);
+        teamLeaderProject.setUser(post.getUser());
+        teamLeaderProject.setRole("팀장");
+        teamLeaderProject.setStatus(post.getStatus().toString());
+        projectRepository.save(teamLeaderProject);
+    }
+
+    private void addTeamMembersToProject(TeamMembersDTO teamMembers, Post post) {
+        if (teamMembers.getPmMembers() != null) {
+            for (PMMemberDTO pm : teamMembers.getPmMembers()) {
+                saveMemberToProject(pm.getNickname(), post, "팀원");
+            }
+        }
+        if (teamMembers.getBackMembers() != null) {
+            for (BackMemberDTO back : teamMembers.getBackMembers()) {
+                saveMemberToProject(back.getNickname(), post, "팀원");
+            }
+        }
+        if (teamMembers.getFrontMembers() != null) {
+            for (FrontMemberDTO front : teamMembers.getFrontMembers()) {
+                saveMemberToProject(front.getNickname(), post, "팀원");
+            }
+        }
+        if (teamMembers.getDesignMembers() != null) {
+            for (DesignMemberDTO design : teamMembers.getDesignMembers()) {
+                saveMemberToProject(design.getNickname(), post, "팀원");
+            }
+        }
+    }
+
+    private void saveMemberToProject(String nickname, Post post, String role) {
+        User user = userRepository.findByNickname(nickname);
+        if (user == null) {
+            throw new CustomException(ErrorCode.USER_NOT_FOUND);
+        }
+        Project project = new Project();
+        project.setPost(post);
+        project.setUser(user);
+        project.setRole(role);
+        project.setStatus(post.getStatus().toString());
+        projectRepository.save(project);
+    }
 }
