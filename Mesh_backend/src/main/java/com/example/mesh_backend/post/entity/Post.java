@@ -6,6 +6,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "post")
@@ -15,14 +17,17 @@ public class Post {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "project_id")
-    private Long projectId;
+    @Column(name = "post_id")
+    private Long postId;
 
-    @Column(name = "project_title", nullable = false)
-    private String projectTitle;
+    @Column(name = "post_title", nullable = false)
+    private String postTitle;
 
-    @Column(name = "project_contents", nullable = false)
-    private String projectContents;
+    @Column(name = "post_contents", nullable = false)
+    private String postContents;
+
+    @Column(name = "project_image_url")
+    private String projectImageUrl;
 
     @Column(name = "project_file")
     private String projectFile;
@@ -60,10 +65,14 @@ public class Post {
     @Column(name = "front_category")
     private String frontCategory;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private String status;
+    private Status status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Project> projects = new ArrayList<>();
 }

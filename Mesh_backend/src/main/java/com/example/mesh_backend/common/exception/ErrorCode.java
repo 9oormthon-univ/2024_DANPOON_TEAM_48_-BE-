@@ -38,7 +38,12 @@ public enum ErrorCode {
     // AWS-S3
     FILE_CONVERT_FAIL(500, "S3_001", "파일 변환 실패"),
     FILE_PROCESSING_ERROR(500, "COMMON002", "파일 처리 오류 발생"),
-    FILE_UPLOAD_FAIL(500, "S3_002", "파일 업로드 실패");
+    FILE_UPLOAD_FAIL(500, "S3_002", "파일 업로드 실패"),
+    FILE_DELETE_FAIL(500, "S3_003", "파일 삭제 실패"),
+    INVALID_S3_PATH(400, "S3_004", "유효하지 않은 S3 경로입니다."),
+
+    //post
+    POST_NOT_FOUND(404, "POST_NOT_FOUND", "해당 공고를 찾을 수 없습니다.");
 
 
     private int status;
