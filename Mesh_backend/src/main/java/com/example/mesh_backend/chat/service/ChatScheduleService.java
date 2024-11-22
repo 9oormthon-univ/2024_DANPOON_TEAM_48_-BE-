@@ -2,6 +2,7 @@ package com.example.mesh_backend.chat.service;
 
 import com.example.mesh_backend.chat.dto.request.ScheduleCreateRequest;
 import com.example.mesh_backend.chat.dto.request.ScheduleUpdateRequest;
+import com.example.mesh_backend.chat.dto.response.ScheduleListResponse;
 import com.example.mesh_backend.chat.dto.response.ScheduleResponse;
 import com.example.mesh_backend.chat.entity.ChatRoom;
 import com.example.mesh_backend.chat.entity.Schedule;
@@ -10,6 +11,11 @@ import com.example.mesh_backend.chat.respository.ScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -62,5 +68,26 @@ public class ChatScheduleService {
                 updatedSchedule.getTime(),
                 updatedSchedule.getDescription()
         );
+    }
+
+
+    //채팅방 스케줄 목록 조회
+    @Transactional(readOnly = true)
+    public ScheduleListResponse getSchedulesByChatRoom(Long chatRoomId) {
+        // 채팅방 조회
+        ChatRoom chatRoom = chatroomRepository.findById(chatRoomId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 채팅방을 찾을 수 없습니다. : " + chatRoomId));
+
+        LocalDate currentDate = LocalDate.now();
+        LocalTime currentTime = LocalTime.now();
+
+        // 지난 스케줄 삭제
+        List<Schedule> pastSchedules = scheduleRepository.findByChatRoomAndDateTimeBefore(chatRoom, currentDate, currentTime);
+        scheduleRepository.deleteAll(pastSchedules);
+
+        // 남아있는 스케줄 정렬
+        List<Schedule> remainingSchedules = scheduleRepository.findByChatRoomAndDateTimeAfterOrderByDateTimeAsc(chatRoom, currentDate, currentTime);
+
+        return ScheduleListResponse.of(chatRoomId, remainingSchedules);
     }
 }

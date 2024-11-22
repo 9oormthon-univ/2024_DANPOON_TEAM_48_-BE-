@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 
@@ -25,15 +27,21 @@ public class MessageController {
     //메세지 송신
     @PostMapping("/send")
     @Operation(summary = "메세지 송신", description = "채팅방에 메세지 송신하는 API")
-    public ResponseEntity<MessageResponse> sendMessage(@RequestBody MessageRequest messageRequest) {
-        Message message = messageService.saveMessage(
-                messageRequest.getUserId(),
-                messageRequest.getChatRoomId(),
-                messageRequest.getContent()
-        );
-        return ResponseEntity.ok(MessageResponse.fromEntity(message));
+    public ResponseEntity<MessageResponse> sendMessage(
+            @RequestPart("messageRequest") MessageRequest messageRequest,
+            @RequestPart(value = "attachment", required = false) MultipartFile attachment) {
+        try {
+            Message message = messageService.saveMessage(
+                    messageRequest.getUserId(),
+                    messageRequest.getChatRoomId(),
+                    messageRequest.getContent(),
+                    attachment
+            );
+            return ResponseEntity.ok(MessageResponse.fromEntity(message));
+        } catch (IOException e) {
+            throw new RuntimeException("파일 업로드 중 오류가 발생했습니다.", e);
+        }
     }
-
 
     //메세지 수신
     @GetMapping("/recieve")

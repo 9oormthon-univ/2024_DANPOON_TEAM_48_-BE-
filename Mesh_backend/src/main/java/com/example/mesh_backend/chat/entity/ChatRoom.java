@@ -42,6 +42,8 @@ public class ChatRoom {
 
     private String githubLink;
 
+    private String figmaLink;
+
     @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY)
     private List<Schedule> schedules;
 

@@ -84,15 +84,12 @@ public class UserController {
             return ResponseEntity.ok(BasicResponse.ofSuccess(responseData));
 
         } catch (CustomException e) {
-            // 사용자 정의 예외 처리
             log.error("CustomException 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BasicResponse.ofError(e.getErrorCode()));
         } catch (IOException e) {
-            // 파일 다운로드 또는 업로드 예외 처리
             log.error("I/O 예외 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.IO_ERROR));
         } catch (Exception e) {
-            // 기타 알 수 없는 예외 처리
             log.error("알 수 없는 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
