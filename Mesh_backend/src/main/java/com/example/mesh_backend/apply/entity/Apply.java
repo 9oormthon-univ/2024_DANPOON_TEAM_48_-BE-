@@ -37,4 +37,8 @@ public class Apply {
 
     @Column(name = "create_at", nullable = false, updatable = false)
     private LocalDateTime createAt = LocalDateTime.now(); // 현재 시간 자동 설정
+
+    @Column(name = "leader_id", nullable = false)
+    private Long leaderId; // Leader ID 추가
+
 }

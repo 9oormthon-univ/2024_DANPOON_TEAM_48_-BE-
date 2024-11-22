@@ -17,7 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/projects")
+@RequestMapping("/api/v1/search")
 @Tag(name = "Apply", description = "팀 지원하기 관련 API")
 public class ApplyController {
 
