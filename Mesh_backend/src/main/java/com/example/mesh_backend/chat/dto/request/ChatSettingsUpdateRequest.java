@@ -11,4 +11,5 @@ public class ChatSettingsUpdateRequest {
 
     private String notionLink;
     private String githubLink;
+    private String figmaLink;
 }

@@ -13,6 +13,7 @@ public class ChatSettingsResponse {
     private Long chatRoomId;
     private String notionLink;
     private String githubLink;
+    private String figmaLink;
     private List<ParticipantResponse> participants;
     private ScheduleResponse nextSchedule;
 }
