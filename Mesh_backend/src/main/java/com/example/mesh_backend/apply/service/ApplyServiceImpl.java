@@ -36,6 +36,8 @@ public class ApplyServiceImpl implements ApplyService {
         apply.setPart(applyRequestDTO.getPart());
         apply.setContents(applyRequestDTO.getContents());
 
+        apply.setLeaderId(post.getUser().getUserId());
+
         applyRepository.save(apply);
         return "지원이 완료되었습니다.";
     }
