@@ -1,6 +1,7 @@
 package com.example.mesh_backend.chat.respository;
 
 import com.example.mesh_backend.chat.entity.ChatRoom;
+import com.example.mesh_backend.chat.entity.ChatRoomType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,6 @@ public interface ChatroomRepository extends JpaRepository<ChatRoom, Long> {
     Optional<ChatRoom> findOneToOneChatRoomByPost(@Param("userId1") Long userId1,
                                                   @Param("userId2") Long userId2,
                                                   @Param("postId") Long postId);
+
+    Optional<ChatRoom> findByPostIdAndChatRoomType(Long postId, ChatRoomType chatRoomType);
 }

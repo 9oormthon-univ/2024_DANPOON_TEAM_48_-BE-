@@ -2,7 +2,11 @@ package com.example.mesh_backend.mypage.service;
 
 import com.example.mesh_backend.login.entity.*;
 import com.example.mesh_backend.login.repository.UserRepository;
+import com.example.mesh_backend.mypage.dto.request.AwardRequest;
+import com.example.mesh_backend.mypage.dto.request.CareerRequest;
+import com.example.mesh_backend.mypage.dto.request.ToolRequest;
 import com.example.mesh_backend.mypage.dto.request.UserProfileRequest;
+import com.example.mesh_backend.mypage.dto.response.UserProfileResponse;
 import com.example.mesh_backend.mypage.entity.Award;
 import com.example.mesh_backend.mypage.entity.Career;
 import com.example.mesh_backend.mypage.entity.CollaborationTool;
@@ -133,5 +137,44 @@ public class MypageService {
         }
 
         userRepository.save(user);
+    }
+
+
+    @Transactional(readOnly = true)
+    public UserProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        return new UserProfileResponse(
+                user.getUserId(),
+                user.getNickname(),
+                user.getMeshScore(),
+                user.getProfileImageUrl(),
+                user.getMajor(),
+                user.getContent(),
+                user.getPortfolio(),
+                user.getMaincategories().stream()
+                        .flatMap(mainCategory -> mainCategory.getSubcategories().stream())
+                        .map(Subcategory::getSubcategoryName)
+                        .collect(Collectors.toList()),
+                user.getAwards().stream()
+                        .map(award -> new AwardRequest(
+                                award.getProjectName(),
+                                award.getPart(),
+                                award.getResult(),
+                                award.getScale()))
+                        .collect(Collectors.toList()),
+                user.getCareers().stream()
+                        .map(career -> new CareerRequest(
+                                career.getDuration(),
+                                career.getCompany(),
+                                career.getPosition()))
+                        .collect(Collectors.toList()),
+                user.getTools().stream()
+                        .map(tool -> new ToolRequest(
+                                tool.getToolName(),
+                                tool.getProficiency()))
+                        .collect(Collectors.toList())
+        );
     }
 }

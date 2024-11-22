@@ -1,10 +1,9 @@
 package com.example.mesh_backend.post.service;
 
-import com.example.mesh_backend.common.CustomErrorException;
+import com.example.mesh_backend.chat.service.ChatService;
 import com.example.mesh_backend.common.CustomException;
 import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.common.utils.S3Uploader;
-import com.example.mesh_backend.message.ErrorResponse;
 import com.example.mesh_backend.post.dto.*;
 import com.example.mesh_backend.post.entity.*;
 import com.example.mesh_backend.post.repository.*;
@@ -15,11 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,6 +27,7 @@ public class PostServiceImpl implements PostService {
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
     private final S3Uploader s3Uploader;
+    private final ChatService chatService;
 
     public PostServiceImpl(PostRepository postRepository,
                            PMMatchRepository pmMatchRepository,
@@ -40,7 +36,8 @@ public class PostServiceImpl implements PostService {
                            DesignMatchRepository designMatchRepository,
                            UserRepository userRepository,
                            ProjectRepository projectRepository,
-                           S3Uploader s3Uploader) {
+                           S3Uploader s3Uploader,
+                           ChatService chatService) {
         this.postRepository = postRepository;
         this.pmMatchRepository = pmMatchRepository;
         this.backMatchRepository = backMatchRepository;
@@ -49,6 +46,7 @@ public class PostServiceImpl implements PostService {
         this.designMatchRepository = designMatchRepository;
         this.projectRepository = projectRepository;
         this.s3Uploader = s3Uploader;
+        this.chatService = chatService;
     }
 
     @Override
@@ -100,6 +98,8 @@ public class PostServiceImpl implements PostService {
         Post post = postRepository.findById(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
+        Status previousStatus = post.getStatus();
+
         // 2. 공고 정보 수정
         if (requestDTO.getPostRequest() != null) {
             PostRequestDTO postRequest = requestDTO.getPostRequest();
@@ -127,6 +127,17 @@ public class PostServiceImpl implements PostService {
 
             // 팀원 추가
             addTeamMembersToProject(teamMembers, post);
+        }
+
+        // 7. 모집완료 상태 확인 후 팀 채팅방 생성
+        if (previousStatus != Status.모집완료 && post.getStatus() == Status.모집완료) {
+            // 저장된 Project 엔터티를 기반으로 팀 멤버를 가져오기
+            List<User> teamMembers = projectRepository.findByPost(post).stream()
+                    .map(Project::getUser)
+                    .collect(Collectors.toList());
+
+            // 팀 채팅방 생성
+            chatService.createTeamChatRoom(post, teamMembers);
         }
 
         postRepository.save(post);
@@ -185,11 +196,13 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+
     private void saveMemberToProject(String nickname, Post post, String role) {
-        User user = userRepository.findByNickname(nickname);
-        if (user == null) {
-            throw new CustomException(ErrorCode.USER_NOT_FOUND);
-        }
+
+        User user = userRepository.findByNickname(nickname)
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
+
+
         Project project = new Project();
         project.setPost(post);
         project.setUser(user);

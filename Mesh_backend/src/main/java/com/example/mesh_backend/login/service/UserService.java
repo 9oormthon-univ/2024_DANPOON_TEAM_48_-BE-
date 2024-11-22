@@ -103,15 +103,15 @@ public class UserService {
 
     // 회원가입 (카카오에서 받은 정보를 DB에 저장)
     public User signup(User user) {
-        validateNickname(user.getNickname()); //중복 닉네임 예외처리
         return userRepository.save(user);
     }
 
     public void validateNickname(String nickname) {
-        if (userRepository.findByNickname(nickname) != null) {
+        if (userRepository.findByNickname(nickname).isPresent()) {
             throw new IllegalArgumentException("이미 존재하는 닉네임입니다.");
         }
     }
+
 
     public void logout(String accessToken) {
         String url = "https://kapi.kakao.com/v1/user/logout";
@@ -182,7 +182,6 @@ public class UserService {
     public void updateUser(User user) {
         userRepository.save(user);
     }
-
 
 
     @Transactional
