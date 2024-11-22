@@ -24,6 +24,7 @@ public enum ErrorCode {
     KAKAO_API_ERROR(500, "KAKAO001", "카카오 API 호출 중 오류가 발생했습니다."),
     JSON_PARSING_ERROR(400, "COMMON001", "JSON 파싱 오류 발생"),
     UNKNOWN_ERROR(500, "COMMON003", "처리 중 오류 발생"),
+    IO_ERROR(500,"IMAGE001","입출력 오류발생"),
 
 
 

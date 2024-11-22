@@ -28,6 +28,9 @@ public class ChatRoom {
     @Column(nullable = false)
     private String roomName;
 
+    @Enumerated(EnumType.STRING)
+    private ChatRoomType chatRoomType;
+
     @ManyToOne
     @JoinColumn(name = "creator_id")
     private User creator; // 채팅방을 생성한 유저
@@ -42,9 +45,10 @@ public class ChatRoom {
     @OneToMany(mappedBy = "chatRoom", fetch = FetchType.LAZY)
     private List<Schedule> schedules;
 
-    public ChatRoom(String roomName, User creator, Long postId) {
+    public ChatRoom(String roomName, User creator, Long postId, ChatRoomType chatRoomType) {
         this.roomName = roomName;
         this.creator = creator;
         this.postId = postId;
+        this.chatRoomType = chatRoomType;
     }
 }

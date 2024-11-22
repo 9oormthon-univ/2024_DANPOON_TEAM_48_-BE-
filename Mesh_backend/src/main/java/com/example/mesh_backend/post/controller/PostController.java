@@ -27,7 +27,7 @@ public class PostController {
         this.tokenService = tokenService;
     }
 
-    @PostMapping
+    @PostMapping()
     @Operation(
             summary = "공고 등록 API",
             description = "사용자가 팀원을 모집하는 공고를 등록함."
