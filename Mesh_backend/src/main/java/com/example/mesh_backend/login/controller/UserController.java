@@ -1,5 +1,6 @@
 package com.example.mesh_backend.login.controller;
 
+import com.example.mesh_backend.common.CustomException;
 import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.common.utils.S3Uploader;
 import com.example.mesh_backend.login.dto.request.KakaoSignupRequest;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpHeaders;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +37,7 @@ import java.util.Optional;
 
 @Controller
 @RequiredArgsConstructor
+@Slf4j
 @RequestMapping("/api/v1/auth")
 @Tag(name = "카카오 Oauth", description = "카카오 Oauth API")
 public class UserController {
@@ -80,7 +83,14 @@ public class UserController {
             UserIdResponse responseData = new UserIdResponse(user.getUserId());
             return ResponseEntity.ok(BasicResponse.ofSuccess(responseData));
 
+        } catch (CustomException e) {
+            log.error("CustomException 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BasicResponse.ofError(e.getErrorCode()));
+        } catch (IOException e) {
+            log.error("I/O 예외 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.IO_ERROR));
         } catch (Exception e) {
+            log.error("알 수 없는 오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }

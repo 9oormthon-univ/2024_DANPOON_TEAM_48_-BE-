@@ -14,6 +14,7 @@ public class MessageResponse {
     private String content;
     private String senderNickname;
     private String senderProfileUrl;
+    private String attachmentUrl;
     private LocalDateTime createdAt;
 
     public static MessageResponse fromEntity(Message message) {
@@ -23,6 +24,7 @@ public class MessageResponse {
                 message.getContent(),
                 message.getUser().getNickname(),
                 message.getUser().getProfileImageUrl(),
+                message.getAttachmentUrl(),
                 message.getCreatedAt()
         );
     }

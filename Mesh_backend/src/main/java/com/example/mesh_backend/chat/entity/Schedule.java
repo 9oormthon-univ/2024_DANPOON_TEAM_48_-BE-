@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -26,4 +27,10 @@ public class Schedule {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id")
     private ChatRoom chatRoom;
+
+    @Transient // DB에 저장하지 않고 런타임에서만 사용
+    public LocalDateTime getDateTime() {
+        return LocalDateTime.of(date, time);
+    }
+
 }

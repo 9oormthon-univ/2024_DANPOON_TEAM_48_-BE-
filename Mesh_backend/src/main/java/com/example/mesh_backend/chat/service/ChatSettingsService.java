@@ -3,6 +3,7 @@ package com.example.mesh_backend.chat.service;
 import com.example.mesh_backend.chat.dto.request.ChatSettingsUpdateRequest;
 import com.example.mesh_backend.chat.dto.response.ChatSettingsResponse;
 import com.example.mesh_backend.chat.dto.response.ParticipantResponse;
+import com.example.mesh_backend.chat.dto.response.ScheduleListResponse;
 import com.example.mesh_backend.chat.dto.response.ScheduleResponse;
 import com.example.mesh_backend.chat.entity.ChatRoom;
 import com.example.mesh_backend.chat.entity.Schedule;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -37,6 +39,9 @@ public class ChatSettingsService {
         }
         if (request.getGithubLink() != null) {
             chatRoom.setGithubLink(request.getGithubLink());
+        }
+        if (request.getFigmaLink() != null) {
+            chatRoom.setFigmaLink(request.getFigmaLink());
         }
 
         ChatRoom updatedChatRoom = chatroomRepository.save(chatRoom);
@@ -64,6 +69,7 @@ public class ChatSettingsService {
                 chatRoom.getId(),
                 chatRoom.getNotionLink(),
                 chatRoom.getGithubLink(),
+                chatRoom.getFigmaLink(),
                 participants,
                 scheduleResponse
         );
@@ -100,8 +106,12 @@ public class ChatSettingsService {
                 chatRoom.getId(),
                 chatRoom.getNotionLink(),
                 chatRoom.getGithubLink(),
+                chatRoom.getFigmaLink(),
                 participants,
                 scheduleResponse
         );
     }
+
+
+
 }

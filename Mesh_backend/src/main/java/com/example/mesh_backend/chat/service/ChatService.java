@@ -1,7 +1,10 @@
 package com.example.mesh_backend.chat.service;
 
+import com.example.mesh_backend.chat.dto.MemberDTO;
+import com.example.mesh_backend.chat.dto.TeamMembersDTO;
 import com.example.mesh_backend.chat.dto.response.ChatRoomDetailsResponse;
 import com.example.mesh_backend.chat.entity.ChatRoom;
+import com.example.mesh_backend.chat.entity.ChatRoomType;
 import com.example.mesh_backend.chat.entity.JoinChat;
 import com.example.mesh_backend.chat.entity.Message;
 import com.example.mesh_backend.chat.respository.ChatroomRepository;
@@ -41,10 +44,15 @@ public class ChatService {
             return existingChatRoom.get();
         }
 
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("모집공고를 찾을 수 없습니다."));
+
         User requester = userRepository.findById(requesterId).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
         User owner = userRepository.findById(ownerId).orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다."));
 
-        ChatRoom chatRoom = new ChatRoom("1:1 채팅방", requester, postId);
+        String chatRoomName = post.getPostTitle() + " 채팅방";
+
+        ChatRoom chatRoom = new ChatRoom(chatRoomName, requester, postId, ChatRoomType.일대일);
         chatroomRepository.save(chatRoom);
 
         joinChatRepository.save(new JoinChat(requester, chatRoom));
@@ -61,40 +69,44 @@ public class ChatService {
     }
 
 
-    //팀 채팅방 생성
-//    @Transactional
-//    public void handleStatusChange(Long postId) {
-//        // 모집공고 조회
-//        Post post = postRepository.findById(postId)
-//                .orElseThrow(() -> new RuntimeException("모집공고 게시글을 찾을 수 없습니다."));
-//
-//        // 상태가 "모집완료"인지 확인
-//        if ("모집완료".equals(post.getStatus())) {
-//            User requester = post.getUser();
-//
-//            ChatRoom chatRoom = new ChatRoom("팀 채팅방", requester, postId);
-//            chatroomRepository.save(chatRoom);
-//
-//            // 팀원 모두 초대 (작성자 포함)
-//            List<Long> teamMemberIds = new ArrayList<>();
-//
-//            // 작성자 추가
-//            teamMemberIds.add(requester.getUserId());
-//
-//            // PM_Match, Back_Match, Front_Match, Design_Match에서 유저 ID 추가
-//            teamMemberIds.addAll(pmMatchRepository.findUserIdsByPostId(postId));
-//            teamMemberIds.addAll(backMatchRepository.findUserIdsByPostId(postId));
-//            teamMemberIds.addAll(frontMatchRepository.findUserIdsByPostId(postId));
-//            teamMemberIds.addAll(designMatchRepository.findUserIdsByPostId(postId));
-//
-//            // JoinChat에 팀원 추가
-//            teamMemberIds.forEach(memberId -> {
-//                User user = userRepository.findById(memberId)
-//                        .orElseThrow(() -> new RuntimeException("User not found"));
-//                joinChatRepository.save(new JoinChat(user, chatRoom));
-//            });
-//        }
-//    }
+    //팀 채팅방 생성 -> 닉네임 이용해서 채팅방 초대
+    @Transactional
+    public ChatRoom createTeamChatRoom(Post post, List<User> teamMembers) {
+        String chatRoomName = post.getPostTitle() + " 팀 채팅방";
+
+        // 기존 팀 채팅방 확인
+        Optional<ChatRoom> existingChatRoom = chatroomRepository.findByPostIdAndChatRoomType(post.getPostId(), ChatRoomType.팀);
+        if (existingChatRoom.isPresent()) {
+            return existingChatRoom.get();
+        }
+
+        // 팀 채팅방 생성
+        ChatRoom chatRoom = new ChatRoom(chatRoomName, post.getUser(), post.getPostId(), ChatRoomType.팀);
+        chatroomRepository.save(chatRoom);
+
+        // 팀 멤버 추가
+        for (User user : teamMembers) {
+            joinChatRepository.save(new JoinChat(user, chatRoom));
+        }
+
+        return chatRoom;
+    }
+
+
+    private void addTeamMembersToChatRoom(ChatRoom chatRoom, TeamMembersDTO teamMembersDTO) {
+        addMembers(chatRoom, teamMembersDTO.getPmMembers());
+        addMembers(chatRoom, teamMembersDTO.getBackMembers());
+        addMembers(chatRoom, teamMembersDTO.getFrontMembers());
+        addMembers(chatRoom, teamMembersDTO.getDesignMembers());
+    }
+
+    private void addMembers(ChatRoom chatRoom, List<MemberDTO> members) {
+        for (MemberDTO member : members) {
+            User user = userRepository.findByNickname(member.getNickname())
+                    .orElseThrow(() -> new RuntimeException("유저를 찾을 수 없습니다: " + member.getNickname()));
+            joinChatRepository.save(new JoinChat(user, chatRoom));
+        }
+    }
 
 
     //유저가 참여한 채팅방 리스트

@@ -2,13 +2,11 @@ package com.example.mesh_backend.chat.entity;
 
 import com.example.mesh_backend.login.entity.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 @Getter
+@Setter
 @Entity
 @Builder
 @NoArgsConstructor
@@ -24,6 +22,8 @@ public class Message {
     private User user;
 
     private String content;
+
+    private String attachmentUrl; // 첨부파일 URL
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_room_id", nullable = false)

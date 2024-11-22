@@ -27,6 +27,6 @@ public class Maincategory {
     @Enumerated(EnumType.STRING)
     private MainCategoryName maincategoryName;
 
-    @OneToMany(mappedBy = "maincategory", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "maincategory", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Subcategory> subcategories;
 }
