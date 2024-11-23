@@ -11,4 +11,6 @@ import java.util.List;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
     void deleteAllByPost(Post post);
     List<Project> findByPost(Post post);
+    List<Project> findAllByPost_PostId(Long postId);
+
 }
