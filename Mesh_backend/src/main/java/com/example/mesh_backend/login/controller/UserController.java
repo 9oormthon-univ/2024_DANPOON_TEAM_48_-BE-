@@ -62,7 +62,7 @@ public class UserController {
 
     //0. 카카오에서 Accesstoeken받기
     @PostMapping("/kakao/token")
-    @Operation(summary = "인가 코드로 액세스 토큰 발급(백앤드)", description = "카카오 인가 코드로 액세스 토큰을 발급받는 API(백앤드)")
+    @Operation(summary = "인가 코드로 액세스 토큰 발급(백앤드용)", description = "카카오 인가 코드로 액세스 토큰을 발급받는 API(백앤드용)")
     public ResponseEntity<BasicResponse<String>> getKakaoAccessToken(
             @RequestParam(name = "code") String code) {
 
