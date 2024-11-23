@@ -13,4 +13,5 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
     List<Project> findByPost(Post post);
     List<Project> findAllByPost_PostId(Long postId);
 
+    List<Project> findByUser_UserId(Long userId);
 }

@@ -31,5 +31,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "OR f.keyword LIKE %:keyword%")
     List<Post> searchByKeyword(@Param("keyword") String keyword);
     List<Post> findAllBydDayGreaterThan(int dDay);
+
+    List<Post> findByProjects_ProjectId(Long projectId);
 }
 
