@@ -21,7 +21,7 @@ public class Career {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "duration", nullable = true) //업무기간 -> yy-dd-mm-
+    @Column(name = "duration", nullable = true) //업무기간 -> yy-dd-mm
     private String duration;
     
     @Column
