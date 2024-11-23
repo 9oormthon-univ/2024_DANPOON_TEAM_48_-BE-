@@ -97,23 +97,28 @@ public class UserController {
 
     //1. 회원가입
     @PostMapping("/signup/kakao")
-    @Operation(summary = "회원가입", description = "엑세스 토큰을 사용하여 카카오 인증 후 회원가입 완료 API")
+    @Operation(summary = "카카오 회원가입", description = "카카오 인증 후 닉네임과 전공을 추가로 입력하여 회원가입 완료 API")
     public ResponseEntity<BasicResponse<UserIdResponse>> kakaoSignup(
-            @RequestHeader("Authorization") String accessTokenHeader) {
+            @RequestHeader("Authorization") String accessTokenHeader,
+            @RequestBody KakaoSignupRequest request) {
         try {
+            // 1. AccessToken에서 Bearer 제거
             String accessToken = extractBearerToken(accessTokenHeader);
+
+            // 2. 카카오 사용자 정보 가져오기
             User kakaoUser = userService.getKakaoUser(accessToken);
 
+            // 3. 이메일 중복 체크
             if (userService.findByEmail(kakaoUser.getEmail()) != null) {
                 return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.EMAIL_ALREADY_EXISTS));
             }
 
-            // 새로운 사용자 생성 및 저장
+            // 4. 새로운 사용자 생성 및 저장
             User user = new User();
             user.setEmail(kakaoUser.getEmail());
             user.setKakaoId(kakaoUser.getKakaoId());
 
-            // 카카오 프로필 이미지 S3에 업로드
+            // 5. 카카오 프로필 이미지 S3에 업로드
             if (kakaoUser.getProfileImageUrl() != null) {
                 File imageFile = downloadImageFromUrl(kakaoUser.getProfileImageUrl());
                 String s3ImageUrl = s3Uploader.upload(imageFile, "profile-images");
@@ -121,11 +126,26 @@ public class UserController {
                 imageFile.delete();
             }
 
+            // 6. 닉네임 중복 검증
+            userService.validateNickname(request.getNickname());
+            user.setNickname(request.getNickname());
+
+            // 7. 전공 설정
+            user.setMajor(request.getMajor());
+
+            // 8. 사용자 저장
             user = userService.signup(user);
 
+            // 9. RefreshToken 생성 및 저장
+            String refreshToken = tokenService.createRefreshToken(user);
+            tokenService.saveRefreshToken(user, refreshToken);
+
+            // 10. 응답 생성
             UserIdResponse responseData = new UserIdResponse(user.getUserId());
             return ResponseEntity.ok(BasicResponse.ofSuccess(responseData));
 
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.DUPLICATE_NICKNAME));
         } catch (Exception e) {
             log.error("오류 발생: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -133,35 +153,6 @@ public class UserController {
         }
     }
 
-    @PostMapping("/signup/kakao/step1")
-    @Operation(summary = "회원가입_1", description = "추가적인 프로필 이미지, 닉네임, 전공을 작성하는 API")
-    public ResponseEntity<BasicResponse<String>> step1(
-            @RequestHeader("userId") Long userId,
-            @RequestBody KakaoSignupRequest request) {
-
-        User user = userService.findByUserId(userId);
-        if (user == null) {
-            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.USER_NOT_FOUND));
-        }
-
-        try {
-            userService.validateNickname(request.getNickname());
-            user.setNickname(request.getNickname());
-            user.setMajor(request.getMajor());
-
-            userService.updateUser(user);
-
-            String refreshToken = tokenService.createRefreshToken(user);
-            tokenService.saveRefreshToken(user, refreshToken);
-
-            return ResponseEntity.ok(BasicResponse.ofSuccess("최종 회원가입 완료"));
-
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.DUPLICATE_NICKNAME));
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
-        }
-    }
 
 
     //2. 로그인

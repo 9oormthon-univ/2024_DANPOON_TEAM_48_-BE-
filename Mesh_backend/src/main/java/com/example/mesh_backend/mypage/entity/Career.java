@@ -21,12 +21,9 @@ public class Career {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "duration", nullable = true)
+    @Column(name = "duration", nullable = true) //업무기간 -> yy-dd-mm
     private String duration;
-
-    @Column(name = "company", nullable = true)
-    private String company;
-
-    @Column(name = "position", nullable = true)
-    private String position;
+    
+    @Column
+    private String careerContent;  //경력 내용 작성용
 }

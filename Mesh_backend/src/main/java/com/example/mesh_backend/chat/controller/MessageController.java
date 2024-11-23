@@ -28,7 +28,7 @@ public class MessageController {
     @PostMapping("/send")
     @Operation(summary = "메세지 송신", description = "채팅방에 메세지 송신하는 API")
     public ResponseEntity<MessageResponse> sendMessage(
-            @RequestPart("messageRequest") MessageRequest messageRequest,
+            @RequestPart(value ="messageRequest", required = false) MessageRequest messageRequest,
             @RequestPart(value = "attachment", required = false) MultipartFile attachment) {
         try {
             Message message = messageService.saveMessage(
