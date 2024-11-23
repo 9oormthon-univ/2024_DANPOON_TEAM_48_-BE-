@@ -1,9 +1,11 @@
 package com.example.mesh_backend.mypage.controller;
 
 import com.example.mesh_backend.common.exception.ErrorCode;
+import com.example.mesh_backend.common.utils.S3Uploader;
 import com.example.mesh_backend.login.entity.SubCategoryName;
 import com.example.mesh_backend.login.entity.Subcategory;
 import com.example.mesh_backend.login.entity.User;
+import com.example.mesh_backend.login.repository.UserRepository;
 import com.example.mesh_backend.login.security.CustomUserDetails;
 import com.example.mesh_backend.login.service.UserService;
 import com.example.mesh_backend.message.BasicResponse;
@@ -12,8 +14,11 @@ import com.example.mesh_backend.mypage.dto.request.AwardRequest;
 import com.example.mesh_backend.mypage.dto.request.CareerRequest;
 import com.example.mesh_backend.mypage.dto.request.ToolRequest;
 import com.example.mesh_backend.mypage.dto.request.UserProfileRequest;
-import com.example.mesh_backend.mypage.dto.response.ProjectDetailResponse;
-import com.example.mesh_backend.mypage.dto.response.UserProfileResponse;
+import com.example.mesh_backend.mypage.dto.response.*;
+import com.example.mesh_backend.mypage.entity.Award;
+import com.example.mesh_backend.mypage.entity.Career;
+import com.example.mesh_backend.mypage.repository.AwardRepository;
+import com.example.mesh_backend.mypage.repository.CareerRepository;
 import com.example.mesh_backend.mypage.service.MeshScoreService;
 import com.example.mesh_backend.mypage.service.MypageProjectService;
 import com.example.mesh_backend.mypage.service.MypageService;
@@ -27,10 +32,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,11 +52,14 @@ public class MypageController {
     private final MeshScoreService meshScoreService;
     private final UserService userService;
     private final MypageProjectService mypageProjectService;
-
+    private final S3Uploader s3Uploader;
+    private final UserRepository userRepository;
+    private final AwardRepository awardRepository;
+    private final CareerRepository careerRepository;
     //1. 내 정보 수정
     @PatchMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "프로필 수정 및 이미지 업데이트", description = "내 정보와 프로필 이미지를 수정하는 API")
-    public ResponseEntity<BasicResponse<UserProfileResponse>> updateProfile(
+    public ResponseEntity<BasicResponse<UserProfileLessResponse>> updateProfile(
             @AuthenticationPrincipal CustomUserDetails customUserDetails,
             @RequestPart(value = "userUpdateRequest", required = false) String userUpdateRequestJson,
             @RequestPart(value = "profileImage", required = false) MultipartFile profileImage) {
@@ -78,7 +88,7 @@ public class MypageController {
             meshScoreService.calculateAndSaveMeshScore(user.getUserId());
 
             // 응답 데이터 생성
-            UserProfileResponse response = new UserProfileResponse(
+            UserProfileLessResponse response = new UserProfileLessResponse(
                     user.getUserId(),
                     user.getNickname(),
                     user.getMeshScore(),
@@ -89,19 +99,6 @@ public class MypageController {
                     user.getMaincategories().stream()
                             .flatMap(mainCategory -> mainCategory.getSubcategories().stream())
                             .map(Subcategory::getSubcategoryName)
-                            .collect(Collectors.toList()),
-                    user.getAwards().stream()
-                            .map(award -> new AwardRequest(
-                                    award.getProjectName(),
-                                    award.getPart(),
-                                    award.getResult(),
-                                    award.getScale()))
-                            .collect(Collectors.toList()),
-                    user.getCareers().stream()
-                            .map(career -> new CareerRequest(
-                                    career.getDuration(),
-                                    career.getCompany(),
-                                    career.getPosition()))
                             .collect(Collectors.toList()),
                     user.getTools().stream()
                             .map(tool -> new ToolRequest(
@@ -126,6 +123,108 @@ public class MypageController {
         }
     }
 
+    //1. 마이페이지 -  수상 추가
+    @Transactional
+    @PostMapping(value = "/profile/award", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "mypage - 사용자 Award 추가", description = "mypage - 사용자의 수상 이력 및 관련 증명서를 추가하는 API")
+    public ResponseEntity<BasicResponse<AwardResponse>> addAward(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestPart("awardRequest") String awardRequestJson,
+            @RequestPart(value = "certificateFiles", required = false) List<MultipartFile> certificateFiles) {
+
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.UNAUTHORIZED_USER));
+        }
+
+        User user = userRepository.findById(customUserDetails.getUser().getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            AwardRequest awardRequest = objectMapper.readValue(awardRequestJson, AwardRequest.class);
+
+            Award newAward = new Award();
+            newAward.setUser(user);
+            newAward.setProjectName(awardRequest.getProjectName());
+            newAward.setScale(awardRequest.getScale());
+
+            // S3 파일 업로드 및 URL 설정
+            if (certificateFiles != null && !certificateFiles.isEmpty()) {
+                System.out.println("업로드된 파일 개수: " + certificateFiles.size()); // 디버깅
+                for (MultipartFile file : certificateFiles) {
+                    System.out.println("업로드 중인 파일: " + file.getOriginalFilename()); // 디버깅
+                    String s3Path = "awards/" + user.getUserId();
+                    String certificateUrl = s3Uploader.uploadFiles(file, s3Path);
+
+                    if (certificateUrl == null || certificateUrl.isEmpty()) {
+                        throw new RuntimeException("S3 업로드 실패");
+                    }
+
+                    System.out.println("업로드된 파일 URL: " + certificateUrl); // 디버깅
+                    newAward.addCertificateUrl(certificateUrl); // 다중 URL 처리
+                }
+            }
+
+            // Award 추가 및 저장
+            user.getAwards().add(newAward);
+            awardRepository.save(newAward); // 명시적으로 저장
+
+            return ResponseEntity.ok(BasicResponse.ofSuccess(new AwardResponse(
+                    newAward.getProjectName(),
+                    newAward.getCertificateUrls(),
+                    newAward.getScale()
+            )));
+
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.JSON_PARSING_ERROR));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
+        }
+    }
+
+
+    //2. 마이페이지 - 커리어 추가
+    @Transactional
+    @PostMapping(value = "/profile/career", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "사용자 Career 추가", description = "사용자의 경력 정보를 추가하는 API")
+    public ResponseEntity<BasicResponse<CareerResponse>> addCareer(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @RequestBody CareerRequest careerRequest) {
+
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.UNAUTHORIZED_USER));
+        }
+
+        // User 조회
+        User user = userRepository.findById(customUserDetails.getUser().getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        try {
+            // Career 객체 생성 및 저장
+            Career newCareer = new Career();
+            newCareer.setUser(user);
+            newCareer.setDuration(careerRequest.getDuration());
+            newCareer.setCareerContent(careerRequest.getCareerContent());
+
+            // 기존 경력 리스트에 추가
+            user.getCareers().add(newCareer);
+
+            // 명시적으로 Career 저장
+            careerRepository.save(newCareer);
+
+            return ResponseEntity.ok(BasicResponse.ofSuccess(new CareerResponse(
+                    newCareer.getDuration(),
+                    newCareer.getCareerContent()
+            )));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
+        }
+    }
+
+
     // 2. 내 프로필 조회
     @GetMapping("/my/profile")
     @Operation(summary = "내 프로필 조회", description = "현재 로그인한 사용자의 프로필 정보를 조회하는 API")
@@ -149,6 +248,7 @@ public class MypageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
         }
     }
+
 
     // 3. 다른 사용자 프로필 조회
     @GetMapping("/{userId}/profile")

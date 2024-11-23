@@ -17,7 +17,5 @@ public class UserProfileRequest {
     private List<MainCategoryName> mainCategories;
     private List<SubCategoryName> subCategories;
 
-    private List<AwardRequest> awards;
-    private List<CareerRequest> careers;
     private List<ToolRequest> tools;
 }

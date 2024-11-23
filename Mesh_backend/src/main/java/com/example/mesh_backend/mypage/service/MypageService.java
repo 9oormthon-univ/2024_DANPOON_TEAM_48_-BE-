@@ -85,36 +85,34 @@ public class MypageService {
             user.setMaincategories(mainCategories);
         }
 
-        //6. 수상 경력 업데이트
-        if (request.getAwards() != null) {
-            List<Award> awards = request.getAwards().stream()
-                    .map(awardRequest -> {
-                        Award award = new Award();
-                        award.setProjectName(awardRequest.getProjectName());
-                        award.setPart(awardRequest.getPart());
-                        award.setResult(awardRequest.getResult());
-                        award.setScale(awardRequest.getScale());
-                        award.setUser(user);
-                        return award;
-                    })
-                    .collect(Collectors.toList());
-            user.setAwards(awards);
-        }
-
-        //7. 경력 업데이트
-        if (request.getCareers() != null) {
-            List<Career> careers = request.getCareers().stream()
-                    .map(careerRequest -> {
-                        Career career = new Career();
-                        career.setDuration(careerRequest.getDuration());
-                        career.setCompany(careerRequest.getCompany());
-                        career.setPosition(careerRequest.getPosition());
-                        career.setUser(user);
-                        return career;
-                    })
-                    .collect(Collectors.toList());
-            user.setCareers(careers);
-        }
+//        //6. 수상 경력 업데이트
+//        if (request.getAwards() != null) {
+//            List<Award> awards = request.getAwards().stream()
+//                    .map(awardRequest -> {
+//                        Award award = new Award();
+//                        award.setProjectName(awardRequest.getProjectName());
+//                        award.setCertificateUrl(award.getCertificateUrl());
+//                        award.setScale(awardRequest.getScale());
+//                        award.setUser(user);
+//                        return award;
+//                    })
+//                    .collect(Collectors.toList());
+//            user.setAwards(awards);
+//        }
+//
+//        //7. 경력 업데이트
+//        if (request.getCareers() != null) {
+//            List<Career> careers = request.getCareers().stream()
+//                    .map(careerRequest -> {
+//                        Career career = new Career();
+//                        career.setDuration(careerRequest.getDuration());
+//                        career.setCareerContent(careerRequest.getCareerContent());
+//                        career.setUser(user);
+//                        return career;
+//                    })
+//                    .collect(Collectors.toList());
+//            user.setCareers(careers);
+//        }
 
         //8. 기술 스택 업데이트
         if (request.getTools() != null) {
@@ -160,15 +158,13 @@ public class MypageService {
                 user.getAwards().stream()
                         .map(award -> new AwardRequest(
                                 award.getProjectName(),
-                                award.getPart(),
-                                award.getResult(),
+                                award.getCertificateUrls(),
                                 award.getScale()))
                         .collect(Collectors.toList()),
                 user.getCareers().stream()
                         .map(career -> new CareerRequest(
                                 career.getDuration(),
-                                career.getCompany(),
-                                career.getPosition()))
+                                career.getCareerContent()))
                         .collect(Collectors.toList()),
                 user.getTools().stream()
                         .map(tool -> new ToolRequest(
