@@ -26,6 +26,10 @@ public class PostServiceImpl implements PostService {
     private final DesignMatchRepository designMatchRepository;
     private final UserRepository userRepository;
     private final ProjectRepository projectRepository;
+    private final PMCategoryRepository pmCategoryRepository;
+    private final DesignCategoryRepository designCategoryRepository;
+    private final BackCategoryRepository backCategoryRepository;
+    private final FrontCategoryRepository frontCategoryRepository;
     private final S3Uploader s3Uploader;
     private final ChatService chatService;
 
@@ -34,11 +38,20 @@ public class PostServiceImpl implements PostService {
                            BackMatchRepository backMatchRepository,
                            FrontMatchRepository frontMatchRepository,
                            DesignMatchRepository designMatchRepository,
+                           PMCategoryRepository pmCategoryRepository,
+                           DesignCategoryRepository designCategoryRepository,
+                           BackCategoryRepository backCategoryRepository,
+                           FrontCategoryRepository frontCategoryRepository,
                            UserRepository userRepository,
                            ProjectRepository projectRepository,
+
                            S3Uploader s3Uploader,
                            ChatService chatService) {
         this.postRepository = postRepository;
+        this.pmCategoryRepository = pmCategoryRepository;
+        this.designCategoryRepository = designCategoryRepository;
+        this.backCategoryRepository = backCategoryRepository;
+        this.frontCategoryRepository = frontCategoryRepository;
         this.pmMatchRepository = pmMatchRepository;
         this.backMatchRepository = backMatchRepository;
         this.frontMatchRepository = frontMatchRepository;
@@ -70,18 +83,50 @@ public class PostServiceImpl implements PostService {
             post.setDesignBest(postRequestDTO.getDesignBest());
             post.setBackBest(postRequestDTO.getBackBest());
             post.setFrontBest(postRequestDTO.getFrontBest());
-            post.setPmCategory(postRequestDTO.getPmCategory());
-            post.setDesignCategory(postRequestDTO.getDesignCategory());
-            post.setBackCategory(postRequestDTO.getBackCategory());
-            post.setFrontCategory(postRequestDTO.getFrontCategory());
             post.setStatus(postRequestDTO.getStatus());
             post.setCreateAt(LocalDate.now());
             post.setUser(user);
 
             postRepository.save(post);
+
+            saveCategories(post, postRequestDTO);
+
             return "공고가 성공적으로 저장되었습니다.";
         } catch (Exception e) {
             throw new CustomException(ErrorCode.FILE_UPLOAD_FAIL);
+        }
+    }
+    private void saveCategories(Post post, PostRequestDTO postRequestDTO) {
+        // PM 카테고리 저장
+        if (postRequestDTO.getPmCategory() != null) {
+            List<PMCategory> pmCategories = postRequestDTO.getPmCategory().stream()
+                    .map(keyword -> new PMCategory(post, keyword))
+                    .collect(Collectors.toList());
+            pmCategoryRepository.saveAll(pmCategories);
+        }
+
+        // Design 카테고리 저장
+        if (postRequestDTO.getDesignCategory() != null) {
+            List<DesignCategory> designCategories = postRequestDTO.getDesignCategory().stream()
+                    .map(keyword -> new DesignCategory(post, keyword))
+                    .collect(Collectors.toList());
+            designCategoryRepository.saveAll(designCategories);
+        }
+
+        // Back 카테고리 저장
+        if (postRequestDTO.getBackCategory() != null) {
+            List<BackCategory> backCategories = postRequestDTO.getBackCategory().stream()
+                    .map(keyword -> new BackCategory(post, keyword))
+                    .collect(Collectors.toList());
+            backCategoryRepository.saveAll(backCategories);
+        }
+
+        // Front 카테고리 저장
+        if (postRequestDTO.getFrontCategory() != null) {
+            List<FrontCategory> frontCategories = postRequestDTO.getFrontCategory().stream()
+                    .map(keyword -> new FrontCategory(post, keyword))
+                    .collect(Collectors.toList());
+            frontCategoryRepository.saveAll(frontCategories);
         }
     }
     @Override
@@ -139,9 +184,19 @@ public class PostServiceImpl implements PostService {
             // 팀 채팅방 생성
             chatService.createTeamChatRoom(post, teamMembers);
         }
+        // 3. 기존 카테고리 삭제 후 저장
+        deleteCategories(post);
+        saveCategories(post, requestDTO.getPostRequest());
 
         postRepository.save(post);
         return "프로젝트가 성공적으로 수정되었습니다.";
+    }
+
+    private void deleteCategories(Post post) {
+        pmCategoryRepository.deleteAllByPost(post);
+        designCategoryRepository.deleteAllByPost(post);
+        backCategoryRepository.deleteAllByPost(post);
+        frontCategoryRepository.deleteAllByPost(post);
     }
 
     private void updatePostDetails(Post post, PostRequestDTO postRequest) {
@@ -152,10 +207,6 @@ public class PostServiceImpl implements PostService {
         if (postRequest.getDesignBest() != null) post.setDesignBest(postRequest.getDesignBest());
         if (postRequest.getBackBest() != null) post.setBackBest(postRequest.getBackBest());
         if (postRequest.getFrontBest() != null) post.setFrontBest(postRequest.getFrontBest());
-        if (postRequest.getPmCategory() != null) post.setPmCategory(postRequest.getPmCategory());
-        if (postRequest.getDesignCategory() != null) post.setDesignCategory(postRequest.getDesignCategory());
-        if (postRequest.getBackCategory() != null) post.setBackCategory(postRequest.getBackCategory());
-        if (postRequest.getFrontCategory() != null) post.setFrontCategory(postRequest.getFrontCategory());
         if (postRequest.getStatus() != null) post.setStatus(postRequest.getStatus());
     }
 

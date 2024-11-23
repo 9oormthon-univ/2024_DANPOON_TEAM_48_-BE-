@@ -5,6 +5,7 @@ import lombok.Data;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class PostRequestDTO {
@@ -15,9 +16,9 @@ public class PostRequestDTO {
     private String designBest;
     private String backBest;
     private String frontBest;
-    private String pmCategory;
-    private String designCategory;
-    private String backCategory;
-    private String frontCategory;
+    private List<String> pmCategory;
+    private List<String> designCategory;
+    private List<String> backCategory;
+    private List<String> frontCategory;
     private Status status;
 }
