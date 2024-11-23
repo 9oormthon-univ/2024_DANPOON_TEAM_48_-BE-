@@ -12,6 +12,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     @Query("SELECT p FROM Post p ORDER BY p.views DESC")
     List<Post> findTop5ByOrderByViewsDesc();
     Optional<Post> findById(Long postId);
+    List<Post> findByUser_UserId(Long userId);
 
 }
 

@@ -7,12 +7,15 @@ import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.login.security.CustomUserDetails;
 import com.example.mesh_backend.login.service.UserService;
 import com.example.mesh_backend.message.BasicResponse;
+import com.example.mesh_backend.mypage.dto.ProjectResponseDTO;
 import com.example.mesh_backend.mypage.dto.request.AwardRequest;
 import com.example.mesh_backend.mypage.dto.request.CareerRequest;
 import com.example.mesh_backend.mypage.dto.request.ToolRequest;
 import com.example.mesh_backend.mypage.dto.request.UserProfileRequest;
+import com.example.mesh_backend.mypage.dto.response.ProjectDetailResponse;
 import com.example.mesh_backend.mypage.dto.response.UserProfileResponse;
 import com.example.mesh_backend.mypage.service.MeshScoreService;
+import com.example.mesh_backend.mypage.service.MypageProjectService;
 import com.example.mesh_backend.mypage.service.MypageService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,6 +44,7 @@ public class MypageController {
     private final MypageService mypageService;
     private final MeshScoreService meshScoreService;
     private final UserService userService;
+    private final MypageProjectService mypageProjectService;
 
     //1. 내 정보 수정
     @PatchMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -171,6 +175,39 @@ public class MypageController {
         }
     }
 
+    // 3. 프로젝트 목록 조회
+    @GetMapping("/projects")
+    @Operation(
+            summary = "프로젝트 목록 조회",
+            description = "사용자가 참여한 모든 프로젝트를 조회합니다."
+    )
+    public ResponseEntity<List<ProjectResponseDTO>> getUserProjects(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
 
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Long userId = customUserDetails.getUser().getUserId();
+        List<ProjectResponseDTO> projects = mypageProjectService.getUserProjects(userId);
+
+        return ResponseEntity.ok(projects);
+    }
+
+    // 4. 프로젝트 목록 상세 조회
+    @GetMapping("/projects/{project_id}")
+    @Operation(summary = "프로젝트 상세 조회", description = "특정 프로젝트의 상세 정보를 조회하는 API")
+    public ResponseEntity<BasicResponse<ProjectDetailResponse>> getProjectDetail(
+            @PathVariable("project_id") Long projectId,
+            @AuthenticationPrincipal CustomUserDetails customUserDetails) {
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.UNAUTHORIZED_USER));
+        }
+
+        Long userId = customUserDetails.getUser().getUserId();
+        ProjectDetailResponse response = mypageProjectService.getProjectDetail(projectId, userId);
+
+        return ResponseEntity.ok(BasicResponse.ofSuccess(response));
+    }
 
 }

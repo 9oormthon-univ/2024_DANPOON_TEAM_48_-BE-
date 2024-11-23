@@ -10,4 +10,5 @@ import java.util.Optional;
 public interface MarkRepository extends JpaRepository<Mark, Long> {
     Optional<Mark> findByUserAndPost(User user, Post post);
     void deleteByUserAndPost(User user, Post post);
+    boolean existsByUser_UserIdAndPost_PostId(Long userId, Long postId);
 }
