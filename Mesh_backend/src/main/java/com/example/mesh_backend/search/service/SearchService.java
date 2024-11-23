@@ -1,7 +1,10 @@
 package com.example.mesh_backend.search.service;
 
+import com.example.mesh_backend.login.service.TokenService;
+import com.example.mesh_backend.search.dto.ProjectDetailResponse;
 import com.example.mesh_backend.search.dto.ProjectResponseDTO;
 import com.example.mesh_backend.post.entity.Post;
+import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.post.repository.PostRepository;
 import com.example.mesh_backend.mark.repository.MarkRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +20,7 @@ public class SearchService {
 
     private final PostRepository postRepository;
     private final MarkRepository markRepository;
+    private final TokenService tokenService;
 
     public List<ProjectResponseDTO> searchProjects(String keyword, List<String> categories) {
         List<Post> posts = postRepository.findByPostTitleContainingOrPostContentsContainingOrUser_NicknameContaining(
@@ -56,6 +60,7 @@ public class SearchService {
                 .collect(Collectors.toList());
     }
 
+
     // 특정 게시글(Post)에 카테고리 키워드가 포함되는지 확인
     private boolean postContainsCategories(Post post, List<String> categories) {
         List<String> postCategories = collectCategories(post); // 게시글의 카테고리 리스트
@@ -85,5 +90,38 @@ public class SearchService {
         }
 
         return categories;
+    }
+
+    public ProjectDetailResponse getProjectDetail(Long projectId, String token) {
+        // JWT 토큰에서 사용자 정보 추출
+        String accessToken = token.replace("Bearer ", "");
+        User user = tokenService.getUserFromAccessToken(accessToken);
+
+        // 게시글 조회
+        Post post = postRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("프로젝트를 찾을 수 없습니다."));
+
+        // 조회수 증가
+        post.setViews(post.getViews() != null ? post.getViews() + 1 : 1L);
+        postRepository.save(post);
+
+        // 북마크 여부 확인
+        boolean isMarked = markRepository.existsByUser_UserIdAndPost_PostId(user.getUserId(), projectId);
+
+        // DTO 생성 및 반환
+        return new ProjectDetailResponse(
+                post.getPostId(),
+                post.getPostTitle(),
+                post.getPostContents(),
+                post.getProjectImageUrl(),
+                post.getProjectFile(),
+                post.getViews(),
+                post.getDeadline(),
+                post.getCreateAt(),
+                post.getStatus(),
+                post.getUser().getNickname(),
+                post.getUser().getProfileImageUrl(),
+                isMarked
+        );
     }
 }

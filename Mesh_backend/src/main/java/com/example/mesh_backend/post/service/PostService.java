@@ -16,6 +16,6 @@ public interface PostService {
                         MultipartFile projectImage,
                         PostRequestDTO postRequestDTO,
                         Long userId) throws IOException;
-    List<PostResponseDTO> getTop5Projects();
+    public List<PostResponseDTO> getTop5ProjectsByViews(Long userId);
     String updateProject(Long projectId, ProjectUpdateRequestDTO requestDTO);
 }
