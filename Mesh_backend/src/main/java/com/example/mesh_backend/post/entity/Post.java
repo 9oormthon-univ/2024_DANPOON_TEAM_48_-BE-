@@ -53,17 +53,17 @@ public class Post {
     @Column(name = "front_best")
     private String frontBest;
 
-    @Column(name = "pm_category")
-    private String pmCategory;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PMCategory> pmCategories;
 
-    @Column(name = "design_category")
-    private String designCategory;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DesignCategory> designCategories;
 
-    @Column(name = "back_category")
-    private String backCategory;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<BackCategory> backCategories;
 
-    @Column(name = "front_category")
-    private String frontCategory;
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<FrontCategory> frontCategories;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
