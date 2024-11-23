@@ -3,10 +3,14 @@ package com.example.mesh_backend.mark.service;
 import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.mark.entity.Mark;
 import com.example.mesh_backend.mark.repository.MarkRepository;
+import com.example.mesh_backend.mypage.dto.response.ProjectResponseDTO;
 import com.example.mesh_backend.post.entity.Post;
 import com.example.mesh_backend.post.repository.PostRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -38,5 +42,29 @@ public class MarkServiceImpl implements MarkService {
                     markRepository.save(newMark);
                     return "북마크가 등록되었습니다.";
                 });
+    }
+
+    @Override
+    public List<ProjectResponseDTO> getBookmarkedProjects(User user) {
+        // 사용자의 북마크 데이터를 가져옴
+        List<Mark> marks = markRepository.findAllByUser(user);
+
+        // ProjectResponseDTO로 변환
+        return marks.stream()
+                .map(mark -> {
+                    Post post = mark.getPost();
+                    return new ProjectResponseDTO(
+                            post.getPostId(),
+                            post.getPostTitle(),
+                            post.getStatus(),
+                            post.getViews(),
+                            post.getProjectImageUrl(),
+                            post.getUser().getNickname(),
+                            post.getUser().getProfileImageUrl(),
+                            true, // 북마크 여부는 항상 true
+                            post.getDDay() // D-Day 추가
+                    );
+                })
+                .collect(Collectors.toList());
     }
 }
