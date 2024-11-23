@@ -56,6 +56,7 @@ public class MypageController {
     private final UserRepository userRepository;
     private final AwardRepository awardRepository;
     private final CareerRepository careerRepository;
+
     //1. 내 정보 수정
     @PatchMapping(value = "/profile/update", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "프로필 수정 및 이미지 업데이트", description = "내 정보와 프로필 이미지를 수정하는 API")
@@ -223,6 +224,119 @@ public class MypageController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
         }
     }
+
+    //마이페이지 -  수상 수정
+    @Transactional
+    @PatchMapping(value = "/profile/award/{awardId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "mypage - 사용자 Award 수정", description = "mypage - 사용자의 수상 이력 및 관련 증명서를 수정하는 API")
+    public ResponseEntity<BasicResponse<AwardResponse>> updateAward(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long awardId,
+            @RequestPart(value = "awardRequest", required = false) String awardRequestJson,
+            @RequestPart(value = "certificateFiles", required = false) List<MultipartFile> certificateFiles) {
+
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.UNAUTHORIZED_USER));
+        }
+
+        User user = userRepository.findById(customUserDetails.getUser().getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Award existingAward = awardRepository.findById(awardId)
+                .orElseThrow(() -> new IllegalArgumentException("Award not found"));
+
+        if (!existingAward.getUser().equals(user)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(BasicResponse.ofError(ErrorCode.ACCESS_DENIED));
+        }
+
+        try {
+            // JSON 요청 파싱 및 업데이트
+            if (awardRequestJson != null) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                AwardRequest awardRequest = objectMapper.readValue(awardRequestJson, AwardRequest.class);
+
+                if (awardRequest.getProjectName() != null) {
+                    existingAward.setProjectName(awardRequest.getProjectName());
+                }
+                if (awardRequest.getScale() != null) {
+                    existingAward.setScale(awardRequest.getScale());
+                }
+            }
+
+            // S3 파일 업로드 및 URL 추가
+            if (certificateFiles != null && !certificateFiles.isEmpty()) {
+                for (MultipartFile file : certificateFiles) {
+                    String s3Path = "awards/" + user.getUserId();
+                    String certificateUrl = s3Uploader.uploadFiles(file, s3Path);
+                    existingAward.addCertificateUrl(certificateUrl); // URL 추가
+                }
+            }
+
+            // 변경 사항 저장
+            awardRepository.save(existingAward);
+
+            return ResponseEntity.ok(BasicResponse.ofSuccess(new AwardResponse(
+                    existingAward.getProjectName(),
+                    existingAward.getCertificateUrls(),
+                    existingAward.getScale()
+            )));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.JSON_PARSING_ERROR));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
+        }
+    }
+
+
+    // 마이페이지 - 커리어 수정
+    @Transactional
+    @PatchMapping(value = "/profile/career/{careerId}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "mypage - 사용자 Career 수정", description = "mypage - 사용자의 경력 정보를 수정하는 API")
+    public ResponseEntity<BasicResponse<CareerResponse>> updateCareer(
+            @AuthenticationPrincipal CustomUserDetails customUserDetails,
+            @PathVariable Long careerId,
+            @RequestBody CareerRequest careerRequest) {
+
+        if (customUserDetails == null) {
+            return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.UNAUTHORIZED_USER));
+        }
+
+        // User와 Career 조회
+        User user = userRepository.findById(customUserDetails.getUser().getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        Career existingCareer = careerRepository.findById(careerId)
+                .orElseThrow(() -> new IllegalArgumentException("Career not found"));
+
+        if (!existingCareer.getUser().equals(user)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(BasicResponse.ofError(ErrorCode.ACCESS_DENIED));
+        }
+
+        try {
+            // 필드 업데이트
+            if (careerRequest.getDuration() != null) {
+                existingCareer.setDuration(careerRequest.getDuration());
+            }
+            if (careerRequest.getCareerContent() != null) {
+                existingCareer.setCareerContent(careerRequest.getCareerContent());
+            }
+
+            // 변경 사항 저장
+            careerRepository.save(existingCareer);
+
+            return ResponseEntity.ok(BasicResponse.ofSuccess(new CareerResponse(
+                    existingCareer.getDuration(),
+                    existingCareer.getCareerContent()
+            )));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.UNKNOWN_ERROR));
+        }
+    }
+
+
 
 
     // 2. 내 프로필 조회
