@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @Setter
@@ -23,15 +26,19 @@ public class Award {
     private User user;
 
     @Column(name = "project_name")
-    private String projectName;
+    private String projectName;  //대회 정보 입력
 
-    @Column
-    private String part;
+    @ElementCollection // 다중 URL 저장을 위한 필드
+    @CollectionTable(name = "award_certificate_urls", joinColumns = @JoinColumn(name = "award_id"))
+    @Column(name = "certificate_url") //상장과 같은 첨부파일관련
+    private List<String> certificateUrls = new ArrayList<>();
 
-    @Column
-    private String result;
 
     @Enumerated(EnumType.STRING)
     @Column
     private Scale scale;
+
+    public void addCertificateUrl(String url) {
+        this.certificateUrls.add(url);
+    }
 }

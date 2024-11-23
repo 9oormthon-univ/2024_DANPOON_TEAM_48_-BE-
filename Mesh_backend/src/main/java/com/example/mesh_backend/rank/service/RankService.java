@@ -62,14 +62,13 @@ public class RankService {
 
         // Awards
         List<AwardResponseDTO> awards = user.getAwards().stream()
-                .map(award -> new AwardResponseDTO(award.getProjectName(), award.getResult()))
+                .map(award -> new AwardResponseDTO(award.getProjectName(), award.getCertificateUrls(), award.getScale()))
                 .collect(Collectors.toList());
 
         // Careers
         List<CareerResponseDTO> careers = user.getCareers().stream()
                 .map(career -> new CareerResponseDTO(
-                        career.getCompany(),
-                        career.getPosition(),
+                        career.getCareerContent(),
                         career.getDuration()))
                 .collect(Collectors.toList());
 

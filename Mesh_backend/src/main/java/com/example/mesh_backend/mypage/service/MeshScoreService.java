@@ -28,7 +28,7 @@ public class MeshScoreService {
                 case 전국:
                     totalScore += 15;
                     break;
-                case 시_기업:
+                case 시_군_구:
                     totalScore += 10;
                     break;
                 case 대학:
@@ -48,13 +48,6 @@ public class MeshScoreService {
                 totalScore += tool.getProficiency();
             }
         }
-
-        //3. 한 프로젝트에 대한 동료평가 평균 점수 계산
-
-
-
-
-
 
         user.setMeshScore((long) totalScore);
         userRepository.save(user);

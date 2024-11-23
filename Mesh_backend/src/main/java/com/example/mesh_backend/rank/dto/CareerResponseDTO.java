@@ -6,7 +6,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class CareerResponseDTO {
-    private String company;
-    private String position;
+    private String careerContent;
     private String duration;
 }
