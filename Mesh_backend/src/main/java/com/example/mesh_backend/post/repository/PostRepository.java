@@ -14,5 +14,7 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     Optional<Post> findById(Long postId);
     List<Post> findByUser_UserId(Long userId);
 
+    List<Post> findByPostTitleContainingOrPostContentsContainingOrUser_NicknameContaining(String postTitle, String postContents, String nickname);
+
 }
 
