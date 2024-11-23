@@ -12,20 +12,23 @@ import com.example.mesh_backend.login.security.CustomUserDetails;
 import com.example.mesh_backend.login.service.TokenService;
 import com.example.mesh_backend.login.service.UserService;
 import com.example.mesh_backend.message.BasicResponse;
+import com.nimbusds.jose.shaded.gson.JsonObject;
+import com.nimbusds.jose.shaded.gson.JsonParser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.HttpHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,30 +50,70 @@ public class UserController {
     private final UserRepository userRepository;
     private final S3Uploader s3Uploader;
 
-
+    @Value("${spring.security.oauth2.client.registration.kakao.client-id}")
+    private String clientId;
+    @Value("${spring.security.oauth2.client.registration.kakao.client-secret}")
+    private String clientSecret;
+    @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
+    private String redirectUri;
     @Value("${kakao.admin-key}")
     private String adminKey;
 
-    //1. 회원가입
-    @PostMapping("/signup/kakao")
-    @Operation(summary = "회원가입", description = "최초 인가 코드를 사용하여 카카오 인증 후 회원가입 완료 API")
-    public ResponseEntity<BasicResponse<UserIdResponse>> kakaoSignup(
+
+    //0. 카카오에서 Accesstoeken받기
+    @PostMapping("/kakao/token")
+    @Operation(summary = "인가 코드로 액세스 토큰 발급(백앤드)", description = "카카오 인가 코드로 액세스 토큰을 발급받는 API(백앤드)")
+    public ResponseEntity<BasicResponse<String>> getKakaoAccessToken(
             @RequestParam(name = "code") String code) {
 
         try {
-            String accessToken = userService.getKakaoAccessToken(code);
+            String url = "https://kauth.kakao.com/oauth/token";
+
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("grant_type", "authorization_code");
+            params.add("client_id", clientId);
+            params.add("redirect_uri", redirectUri);
+            params.add("code", code);
+            params.add("client_secret", clientSecret);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            HttpEntity<MultiValueMap<String, String>> entity = new HttpEntity<>(params, headers);
+
+            RestTemplate restTemplate = new RestTemplate();
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, entity, String.class);
+
+            // 응답에서 액세스 토큰 추출
+            String accessToken = extractAccessToken(response.getBody());
+
+            return ResponseEntity.ok(BasicResponse.ofSuccess(accessToken));
+
+        } catch (Exception e) {
+            log.error("액세스 토큰 발급 실패: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
+        }
+    }
+
+    //1. 회원가입
+    @PostMapping("/signup/kakao")
+    @Operation(summary = "회원가입", description = "엑세스 토큰을 사용하여 카카오 인증 후 회원가입 완료 API")
+    public ResponseEntity<BasicResponse<UserIdResponse>> kakaoSignup(
+            @RequestHeader("Authorization") String accessTokenHeader) {
+        try {
+            String accessToken = extractBearerToken(accessTokenHeader);
             User kakaoUser = userService.getKakaoUser(accessToken);
 
             if (userService.findByEmail(kakaoUser.getEmail()) != null) {
                 return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.EMAIL_ALREADY_EXISTS));
             }
 
-
+            // 새로운 사용자 생성 및 저장
             User user = new User();
             user.setEmail(kakaoUser.getEmail());
             user.setKakaoId(kakaoUser.getKakaoId());
 
-            //카카오 프로필 이미지 s3에 업로드
+            // 카카오 프로필 이미지 S3에 업로드
             if (kakaoUser.getProfileImageUrl() != null) {
                 File imageFile = downloadImageFromUrl(kakaoUser.getProfileImageUrl());
                 String s3ImageUrl = s3Uploader.upload(imageFile, "profile-images");
@@ -83,24 +126,17 @@ public class UserController {
             UserIdResponse responseData = new UserIdResponse(user.getUserId());
             return ResponseEntity.ok(BasicResponse.ofSuccess(responseData));
 
-        } catch (CustomException e) {
-            log.error("CustomException 발생: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(BasicResponse.ofError(e.getErrorCode()));
-        } catch (IOException e) {
-            log.error("I/O 예외 발생: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.IO_ERROR));
         } catch (Exception e) {
-            log.error("알 수 없는 오류 발생: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
+            log.error("오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
-
-
 
     @PostMapping("/signup/kakao/step1")
     @Operation(summary = "회원가입_1", description = "추가적인 프로필 이미지, 닉네임, 전공을 작성하는 API")
     public ResponseEntity<BasicResponse<String>> step1(
-            @RequestParam(name = "userId") Long userId,
+            @RequestHeader("userId") Long userId,
             @RequestBody KakaoSignupRequest request) {
 
         User user = userService.findByUserId(userId);
@@ -129,13 +165,12 @@ public class UserController {
 
 
     //2. 로그인
-    @GetMapping("/login/kakao")
-    @Operation(summary = "로그인", description = "로그인을 진행하는 API")
+    @PostMapping("/login/kakao")
+    @Operation(summary = "로그인", description = "엑세스 토큰을 사용하여 로그인 진행")
     public ResponseEntity<BasicResponse<String>> kakaoLogin(
-            @RequestParam(name = "code") String code) {
-
+            @RequestHeader("Authorization") String accessTokenHeader) {
         try {
-            String accessToken = userService.getKakaoAccessToken(code);
+            String accessToken = extractBearerToken(accessTokenHeader);
             User kakaoUser = userService.getKakaoUser(accessToken);
             User user = userService.findByEmail(kakaoUser.getEmail());
 
@@ -143,28 +178,26 @@ public class UserController {
                 return ResponseEntity.badRequest().body(BasicResponse.ofError(ErrorCode.USER_NOT_FOUND));
             }
 
+            // RefreshToken 처리
             String refreshToken = tokenService.getRefreshToken(user);
-
             if (refreshToken == null) {
                 refreshToken = tokenService.createRefreshToken(user);
-                tokenService.saveRefreshToken(user, refreshToken); // DB에 RefreshToken 저장
+                tokenService.saveRefreshToken(user, refreshToken);
             }
 
+            // 새로운 AccessToken 생성
             String newAccessToken = tokenService.renewAccessToken(refreshToken);
 
-            CustomUserDetails userDetails = new CustomUserDetails(user);
-            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-
+            // 헤더 설정
             HttpHeaders headers = new HttpHeaders();
-            //헤더에 refresh와 access 함께 보내줌
             headers.set("Authorization", "Bearer " + newAccessToken + ", Refresh " + refreshToken);
 
-            BasicResponse<String> response = BasicResponse.ofSuccess("로그인 성공");
-            return ResponseEntity.ok().headers(headers).body(response);
+            return ResponseEntity.ok().headers(headers).body(BasicResponse.ofSuccess("로그인 성공"));
 
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
+            log.error("오류 발생: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(BasicResponse.ofError(ErrorCode.INTERNAL_SERVER_ERROR));
         }
     }
 
@@ -244,6 +277,18 @@ public class UserController {
             }
         }
         return file;
+    }
+
+    private String extractBearerToken(String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        throw new IllegalArgumentException("유효하지 않은 Authorization 헤더 형식입니다.");
+    }
+
+    private String extractAccessToken(String responseBody) {
+        JsonObject jsonResponse = new JsonParser().parse(responseBody).getAsJsonObject();
+        return jsonResponse.get("access_token").getAsString();
     }
 
 }
