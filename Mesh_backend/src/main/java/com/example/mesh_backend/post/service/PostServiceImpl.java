@@ -206,9 +206,20 @@ public class PostServiceImpl implements PostService {
             // 팀 채팅방 생성
             chatService.createTeamChatRoom(post, teamMembers);
         }
-        // 3. 기존 카테고리 삭제 후 저장
+        // 8. 기존 카테고리 삭제 후 저장
         deleteCategories(post);
         saveCategories(post, requestDTO.getPostRequest());
+
+        // 상태 업데이트
+        if (requestDTO.getPostRequest() != null && requestDTO.getPostRequest().getStatus() != null) {
+            post.setStatus(requestDTO.getPostRequest().getStatus());
+
+            // 활동 종료 시 D_day를 5로 설정
+            if (post.getStatus() == Status.활동완료) {
+                post.setDDay(5);
+            }
+        }
+
 
         postRepository.save(post);
         return "프로젝트가 성공적으로 수정되었습니다.";

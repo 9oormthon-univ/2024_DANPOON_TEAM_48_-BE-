@@ -30,6 +30,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             "OR b.keyword LIKE %:keyword% " +
             "OR f.keyword LIKE %:keyword%")
     List<Post> searchByKeyword(@Param("keyword") String keyword);
-
+    List<Post> findAllBydDayGreaterThan(int dDay);
 }
 
