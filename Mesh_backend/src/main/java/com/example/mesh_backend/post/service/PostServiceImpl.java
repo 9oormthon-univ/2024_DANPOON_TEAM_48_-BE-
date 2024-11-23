@@ -160,11 +160,15 @@ public class PostServiceImpl implements PostService {
     }
     @Transactional
     @Override
-    public String updateProject(Long projectId, ProjectUpdateRequestDTO requestDTO) {
+    public String updateProject(Long projectId, ProjectUpdateRequestDTO requestDTO, Long userId) {
         // 1. 공고 조회
         Post post = postRepository.findById(projectId)
                 .orElseThrow(() -> new CustomException(ErrorCode.POST_NOT_FOUND));
 
+        // 1-1. 수정 권한 확인
+        if (!post.getUser().getUserId().equals(userId)) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
         Status previousStatus = post.getStatus();
 
         // 2. 공고 정보 수정

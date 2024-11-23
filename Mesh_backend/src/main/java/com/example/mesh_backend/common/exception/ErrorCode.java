@@ -44,7 +44,8 @@ public enum ErrorCode {
     INVALID_S3_PATH(400, "S3_004", "유효하지 않은 S3 경로입니다."),
 
     //post
-    POST_NOT_FOUND(404, "POST_NOT_FOUND", "해당 공고를 찾을 수 없습니다.");
+    POST_NOT_FOUND(404, "POST_NOT_FOUND", "해당 공고를 찾을 수 없습니다."),
+    UNAUTHORIZED_ACCESS(404,"UNAUTHORIZED_ACCESS" , "권한이 없습니다.");
 
 
     private int status;

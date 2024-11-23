@@ -65,15 +65,32 @@ public class PostController {
             @RequestPart(value = "projectFile", required = false) MultipartFile projectFile,
             @RequestPart(value = "projectImage", required = false) MultipartFile projectImage,
             @RequestPart("postRequest") PostRequestDTO postRequestDTO,
-            @RequestPart("teamMembers") TeamMembersDTO teamMembers
+            @RequestPart("teamMembers") TeamMembersDTO teamMembers,
+            @RequestHeader("Authorization") String token
     ) {
-        ProjectUpdateRequestDTO requestDTO = new ProjectUpdateRequestDTO();
-        requestDTO.setPostRequest(postRequestDTO);
-        requestDTO.setProjectFile(projectFile != null ? projectFile.getOriginalFilename() : null);
-        requestDTO.setProjectImage(projectImage != null ? projectImage.getOriginalFilename() : null);
-        requestDTO.setTeamMembers(teamMembers);
+        try {
+            // "Bearer " 접두사 제거
+            String accessToken = token.replace("Bearer ", "");
 
-        String message = postService.updateProject(projectId, requestDTO);
-        return ResponseEntity.ok(message);
+            // AccessToken에서 User 정보 조회
+            User user = tokenService.getUserFromAccessToken(accessToken);
+
+            // userId 추출
+            Long userId = user.getUserId();
+
+            // DTO 생성 및 값 설정
+            ProjectUpdateRequestDTO requestDTO = new ProjectUpdateRequestDTO();
+            requestDTO.setPostRequest(postRequestDTO);
+            requestDTO.setProjectFile(projectFile != null ? projectFile.getOriginalFilename() : null);
+            requestDTO.setProjectImage(projectImage != null ? projectImage.getOriginalFilename() : null);
+            requestDTO.setTeamMembers(teamMembers);
+
+            // 서비스 호출
+            String message = postService.updateProject(projectId, requestDTO, userId);
+            return ResponseEntity.ok(message);
+
+        } catch (Exception e) {
+            throw new CustomException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
     }
 }

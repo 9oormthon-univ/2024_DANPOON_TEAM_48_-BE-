@@ -17,5 +17,5 @@ public interface PostService {
                         PostRequestDTO postRequestDTO,
                         Long userId) throws IOException;
     public List<PostResponseDTO> getTop5ProjectsByViews(Long userId);
-    String updateProject(Long projectId, ProjectUpdateRequestDTO requestDTO);
+    public String updateProject(Long projectId, ProjectUpdateRequestDTO requestDTO, Long userId);
 }
