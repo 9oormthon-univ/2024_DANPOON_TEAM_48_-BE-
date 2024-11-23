@@ -1,6 +1,6 @@
 package com.example.mesh_backend.search.controller;
 
-import com.example.mesh_backend.mypage.dto.ProjectResponseDTO;
+import com.example.mesh_backend.search.dto.ProjectResponseDTO;
 import com.example.mesh_backend.search.service.SearchService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +17,12 @@ public class SearchController {
     private final SearchService searchService;
 
     @GetMapping("/api/v1/search/result")
-    public ResponseEntity<List<ProjectResponseDTO>> searchProjects(@RequestParam String keyword) {
-        List<ProjectResponseDTO> projects = searchService.searchProjects(keyword);
+    public ResponseEntity<List<ProjectResponseDTO>> searchProjects(
+            @RequestParam String keyword,
+            @RequestParam(required = false) List<String> categories // 클라이언트에서 카테고리 필터 전달
+    ) {
+        List<ProjectResponseDTO> projects = searchService.searchProjects(keyword, categories);
         return ResponseEntity.ok(projects);
     }
+
 }

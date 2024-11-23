@@ -32,8 +32,8 @@ public class Post {
     @Column(name = "project_file")
     private String projectFile;
 
-    @Column(name = "views", columnDefinition = "BIGINT default 0")
-    private Long views;
+    @Column(name = "views", nullable = false, columnDefinition = "BIGINT DEFAULT 0")
+    private Long views = 0L;
 
     @Column(name = "deadline", nullable = false)
     private LocalDate deadline;
