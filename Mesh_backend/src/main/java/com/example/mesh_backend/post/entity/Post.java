@@ -75,4 +75,8 @@ public class Post {
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Project> projects = new ArrayList<>();
+
+    @Column(name = "d_day", nullable = false, columnDefinition = "INT DEFAULT 0")
+    private int dDay = 0;
+
 }
