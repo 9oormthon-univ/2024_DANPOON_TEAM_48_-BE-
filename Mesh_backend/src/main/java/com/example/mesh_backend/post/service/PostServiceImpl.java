@@ -4,6 +4,7 @@ import com.example.mesh_backend.chat.service.ChatService;
 import com.example.mesh_backend.common.CustomException;
 import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.common.utils.S3Uploader;
+import com.example.mesh_backend.mark.repository.MarkRepository;
 import com.example.mesh_backend.post.dto.*;
 import com.example.mesh_backend.post.entity.*;
 import com.example.mesh_backend.post.repository.*;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +32,8 @@ public class PostServiceImpl implements PostService {
     private final DesignCategoryRepository designCategoryRepository;
     private final BackCategoryRepository backCategoryRepository;
     private final FrontCategoryRepository frontCategoryRepository;
+    private final MarkRepository markRepository;
+
     private final S3Uploader s3Uploader;
     private final ChatService chatService;
 
@@ -44,6 +48,7 @@ public class PostServiceImpl implements PostService {
                            FrontCategoryRepository frontCategoryRepository,
                            UserRepository userRepository,
                            ProjectRepository projectRepository,
+                           MarkRepository markRepository,
 
                            S3Uploader s3Uploader,
                            ChatService chatService) {
@@ -59,6 +64,7 @@ public class PostServiceImpl implements PostService {
         this.designMatchRepository = designMatchRepository;
         this.projectRepository = projectRepository;
         this.s3Uploader = s3Uploader;
+        this.markRepository = markRepository;
         this.chatService = chatService;
     }
 
@@ -130,11 +136,27 @@ public class PostServiceImpl implements PostService {
         }
     }
     @Override
-    public List<PostResponseDTO> getTop5Projects() {
-        List<Post> top5Posts = postRepository.findTop5ByOrderByViewsDesc(); // 조회수 기준 상위 5개
-        return top5Posts.stream()
-                .map(post -> new PostResponseDTO(post.getPostTitle()))
+    public List<PostResponseDTO> getTop5ProjectsByViews(Long userId) {
+        List<Post> topPosts = postRepository.findTop5ByOrderByViewsDesc();
+
+        // DTO로 변환하며 북마크 여부 포함
+        return topPosts.stream()
+                .map(post -> new PostResponseDTO(
+                        post.getPostId(),
+                        post.getPostTitle(),
+                        post.getStatus(),
+                        post.getViews(),
+                        post.getProjectImageUrl(),
+                        post.getUser().getNickname(),
+                        post.getUser().getProfileImageUrl(),
+                        isBookmarkedByUser(userId, post.getPostId()), // 북마크 여부 확인
+                        post.getCreateAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+                ))
                 .collect(Collectors.toList());
+    }
+
+    private boolean isBookmarkedByUser(Long userId, Long postId) {
+        return markRepository.existsByUser_UserIdAndPost_PostId(userId, postId);
     }
     @Transactional
     @Override
