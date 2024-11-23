@@ -1,0 +1,42 @@
+package com.example.mesh_backend.mark.service;
+
+import com.example.mesh_backend.login.entity.User;
+import com.example.mesh_backend.mark.entity.Mark;
+import com.example.mesh_backend.mark.repository.MarkRepository;
+import com.example.mesh_backend.post.entity.Post;
+import com.example.mesh_backend.post.repository.PostRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+public class MarkServiceImpl implements MarkService {
+
+    private final MarkRepository markRepository;
+    private final PostRepository postRepository;
+
+    public MarkServiceImpl(MarkRepository markRepository, PostRepository postRepository) {
+        this.markRepository = markRepository;
+        this.postRepository = postRepository;
+    }
+
+    @Override
+    public String toggleMark(User user, Long projectId) {
+        Post post = postRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("프로젝트를 찾을 수 없습니다."));
+
+        // 북마크 존재 여부 확인
+        return markRepository.findByUserAndPost(user, post)
+                .map(mark -> {
+                    markRepository.deleteByUserAndPost(user, post);
+                    return "북마크가 삭제되었습니다.";
+                })
+                .orElseGet(() -> {
+                    Mark newMark = new Mark();
+                    newMark.setUser(user);
+                    newMark.setPost(post);
+                    markRepository.save(newMark);
+                    return "북마크가 등록되었습니다.";
+                });
+    }
+}
