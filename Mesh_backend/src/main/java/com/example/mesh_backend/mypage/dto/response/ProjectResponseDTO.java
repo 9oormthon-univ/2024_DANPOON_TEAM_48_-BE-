@@ -1,4 +1,4 @@
-package com.example.mesh_backend.mypage.dto;
+package com.example.mesh_backend.mypage.dto.response;
 
 import com.example.mesh_backend.post.entity.Status;
 import lombok.AllArgsConstructor;
@@ -15,4 +15,5 @@ public class ProjectResponseDTO {
     private String nickname;           // 작성자 닉네임
     private String profileImageUrl;    // 작성자 프로필 이미지 URL
     private boolean isBookmarked;      // 북마크 여부
+    private int dDay; //D-Day 정보 추가
 }

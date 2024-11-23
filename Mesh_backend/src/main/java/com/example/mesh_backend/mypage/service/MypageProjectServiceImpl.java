@@ -1,6 +1,6 @@
 package com.example.mesh_backend.mypage.service;
 
-import com.example.mesh_backend.mypage.dto.ProjectResponseDTO;
+import com.example.mesh_backend.mypage.dto.response.ProjectResponseDTO;
 import com.example.mesh_backend.mypage.dto.response.ProjectDetailResponse;
 import com.example.mesh_backend.post.entity.Post;
 import com.example.mesh_backend.post.repository.PostRepository;
@@ -35,7 +35,8 @@ public class MypageProjectServiceImpl implements MypageProjectService {
                     post.getProjectImageUrl(),
                     post.getUser().getNickname(),
                     post.getUser().getProfileImageUrl(),
-                    isBookmarked
+                    isBookmarked,
+                    post.getDDay()
             );
         }).collect(Collectors.toList());
     }

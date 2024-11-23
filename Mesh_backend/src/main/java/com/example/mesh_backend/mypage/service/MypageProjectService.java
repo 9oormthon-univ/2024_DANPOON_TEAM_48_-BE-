@@ -1,6 +1,6 @@
 package com.example.mesh_backend.mypage.service;
 
-import com.example.mesh_backend.mypage.dto.ProjectResponseDTO;
+import com.example.mesh_backend.mypage.dto.response.ProjectResponseDTO;
 import com.example.mesh_backend.mypage.dto.response.ProjectDetailResponse;
 
 import java.util.List;
