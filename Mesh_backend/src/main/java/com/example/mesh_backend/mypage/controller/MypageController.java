@@ -2,14 +2,13 @@ package com.example.mesh_backend.mypage.controller;
 
 import com.example.mesh_backend.common.exception.ErrorCode;
 import com.example.mesh_backend.common.utils.S3Uploader;
-import com.example.mesh_backend.login.entity.SubCategoryName;
 import com.example.mesh_backend.login.entity.Subcategory;
 import com.example.mesh_backend.login.entity.User;
 import com.example.mesh_backend.login.repository.UserRepository;
 import com.example.mesh_backend.login.security.CustomUserDetails;
 import com.example.mesh_backend.login.service.UserService;
 import com.example.mesh_backend.message.BasicResponse;
-import com.example.mesh_backend.mypage.dto.ProjectResponseDTO;
+import com.example.mesh_backend.mypage.dto.response.ProjectResponseDTO;
 import com.example.mesh_backend.mypage.dto.request.AwardRequest;
 import com.example.mesh_backend.mypage.dto.request.CareerRequest;
 import com.example.mesh_backend.mypage.dto.request.ToolRequest;
@@ -37,7 +36,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
